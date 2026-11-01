@@ -8,6 +8,7 @@ improvements are all welcome.
 - For anything bigger than a small fix, open an issue first so we can agree
   on the approach.
 - Security issues go through [SECURITY.md](SECURITY.md), not public issues.
+- Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Development
 
