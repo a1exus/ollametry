@@ -139,7 +139,7 @@ func (p *Poller) RegisterMetrics(meter metric.Meter) (metric.Registration, error
 		return g
 	}
 	var (
-		up            = gauge("ollama.up", "1", "Whether the last poll reached Ollama (1) or not (0).")
+		up            = gauge("ollama.up", "", "Whether the last poll reached Ollama (1) or not (0).")
 		memSize       = gauge("ollama.model.memory.size", "By", "Memory held by a loaded model.")
 		vramSize      = gauge("ollama.model.memory.vram.size", "By", "Part of a loaded model's memory held in GPU memory.")
 		contextLength = gauge("ollama.model.context_length", "{token}", "Context window a loaded model was started with.")
