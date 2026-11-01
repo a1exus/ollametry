@@ -159,3 +159,7 @@ make cover    # coverage summary
 Parser tests replay responses recorded from Ollama 0.40.13 in
 `internal/dialect/testdata`; proxy tests run the real proxy between an HTTP
 client and a fake Ollama.
+
+## License
+
+[MIT](LICENSE)

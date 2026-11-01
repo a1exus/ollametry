@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Makefile running Go 1.27.3, golangci-lint v2.15.0 and govulncheck v1.9.0 in containers: `test`, `lint`, `fmt`, `vuln`, `check`, `cover`, `up`, `down`, `health`, `smoke`.
 - Tests against responses recorded from Ollama 0.40.13.
 - `README.md`, `AGENTS.md`, `CLAUDE.md`, `CHANGELOG.md`.
+- MIT license (`LICENSE`), also declared on the image as `org.opencontainers.image.licenses`.
 
 ### Security
 
