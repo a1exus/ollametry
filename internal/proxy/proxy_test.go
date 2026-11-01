@@ -596,6 +596,11 @@ func TestModelFromPrefix(t *testing.T) {
 		{`{"model":"a","messages":[`, "a"},
 		{`{"stream":true,"options":{"x":[1,2]},"model":"b","messa`, "b"},
 		{`{"messages":[{"content":"trunc`, ""},
+		{`{"Model":"upper","prompt":"x`, "upper"},
+		{`{"model":"first","model":"last","prompt":"x`, "last"},
+		{`{"model":"a","model":null,"prompt":"x`, "a"},
+		{`{"model":"a","model":7}`, ""},
+		{`{"model":"cut mid-na`, ""},
 		{`[1,2]`, ""},
 		{``, ""},
 	}
