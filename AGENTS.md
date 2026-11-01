@@ -6,14 +6,14 @@ Operating rules for AI agents working in this repo. Architecture details and rat
 
 - Never log or record prompt or response content. Metrics and logs carry counts, durations, model names and routes only.
 - Never create or modify `.env`; ask the user and give them the exact line.
-- Never read Grafana credentials; `make dashboard` prompts the user for them.
+- Never read Grafana credentials.
 
 ## Off-limits
 
 | Path / action | Reason |
 |---|---|
 | `.env` | User-owned local config |
-| `~/opt/grafana`, `~/opt/traefik` | Separate stacks; join their networks, never change them |
+| `~/opt/grafana`, `~/opt/traefik` | Separate repos with their own AGENTS.md; change them only on explicit request. Dashboard JSON lives here and `~/opt/grafana` pulls it (`make dashboards`) |
 | The host Ollama configuration (`launchctl setenv`, restarting the app) | Changes how every client reaches Ollama; only on explicit request |
 | `git push`, publishing tags or images | Only when the user explicitly asks |
 
@@ -40,7 +40,7 @@ make health
 make smoke MODEL=<an installed model>
 ```
 
-Dashboard changes: run every query against Prometheus (see CLAUDE.md) and look at the rendered dashboard before committing.
+Dashboard changes: run every query against Prometheus (see CLAUDE.md), `make -C ~/opt/grafana dashboards`, and look at the rendered dashboard before committing.
 
 ## Changes and commits
 

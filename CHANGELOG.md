@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configuration by flags and `OLLAMETRY_*` variables; exporter configured by standard `OTEL_*` variables (OTLP by default, Prometheus or console optional); Go runtime metrics.
 - `/livez` and `/readyz` on a separate admin listener; `ollametry healthcheck` subcommand for the distroless image.
 - Distroless, non-root, read-only container on the `grafana_default` network, ports bound to `127.0.0.1` (11435 proxy, 11436 admin).
-- Grafana dashboard `deploy/grafana/ollametry.json` and `make dashboard` to import it.
+- Grafana dashboard `deploy/grafana/ollametry.json`, provisioned by `~/opt/grafana` (`make dashboards`).
 - Makefile running Go 1.27.3, golangci-lint v2.15.0 and govulncheck v1.9.0 in containers: `test`, `lint`, `fmt`, `vuln`, `check`, `cover`, `up`, `down`, `health`, `smoke`.
 - Tests against responses recorded from Ollama 0.40.13.
 - `README.md`, `AGENTS.md`, `CLAUDE.md`, `CHANGELOG.md`.

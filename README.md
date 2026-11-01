@@ -38,14 +38,14 @@ Docs: [`AGENTS.md`](AGENTS.md) (rules for AI agents),
 make up                               # build, start, wait until healthy
 make health                           # Ollama, the proxy, readiness
 make smoke MODEL=granite4.2:8b        # one request through the proxy
-make dashboard                        # import the dashboard (asks for the Grafana password)
+make -C ~/opt/grafana dashboards     # provision the dashboard into Grafana
 ```
 
 | Endpoint | URL |
 |---|---|
 | Proxy (use instead of Ollama) | `http://127.0.0.1:11435` |
 | Liveness / readiness | `http://127.0.0.1:11436/livez`, `/readyz` |
-| Dashboard | `https://grafana.localhost/d/ollametry` |
+| Dashboard (folder "ollama") | `https://grafana.localhost/d/ollametry` |
 
 ## Pointing clients at the proxy
 
