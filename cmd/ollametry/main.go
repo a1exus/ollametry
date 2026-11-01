@@ -78,19 +78,19 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 	if err != nil {
 		return err
 	}
+	poller := ollama.NewPoller(
+		ollama.NewClient(cfg.OllamaURL, &http.Client{Transport: proxy.NewTransport()}),
+		cfg.PollInterval, logger)
 	p, err := proxy.New(proxy.Config{
 		Upstream:        cfg.OllamaURL,
 		MaxInspectBytes: cfg.MaxInspectBytes,
 		Instruments:     instruments,
 		Logger:          logger,
+		KnownModel:      poller.KnownModel,
 	})
 	if err != nil {
 		return err
 	}
-
-	poller := ollama.NewPoller(
-		ollama.NewClient(cfg.OllamaURL, &http.Client{Transport: proxy.NewTransport()}),
-		cfg.PollInterval, logger)
 	if _, err := poller.RegisterMetrics(meter); err != nil {
 		return err
 	}
@@ -155,6 +155,14 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 		// In-flight streams outlived the timeout; cut them off.
 		logger.Warn("proxy did not drain in time, closing connections", slog.Any("error", err))
 		_ = proxySrv.Close()
+	}
+	// Close does not wait for handlers. Closing their connections cancels
+	// their upstream requests, so they finish quickly; their metrics must land
+	// before the final flush.
+	waitCtx, cancelWait := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancelWait()
+	if err := p.Wait(waitCtx); err != nil {
+		logger.Warn("handlers still running, their metrics may be lost", slog.Any("error", err))
 	}
 	if err := adminSrv.Shutdown(shutdownCtx); err != nil {
 		_ = adminSrv.Close()
