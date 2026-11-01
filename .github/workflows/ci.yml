@@ -1,0 +1,121 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    name: Lint, test, scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The Makefile runs every tool in a pinned container, so CI and local
+      # runs use identical toolchains.
+      - name: go.mod and go.sum are tidy
+        run: |
+          make tidy
+          git diff --exit-code -- go.mod go.sum
+
+      - name: Lint
+        run: make lint
+
+      - name: Test (race detector, coverage)
+        run: make cover
+
+      - name: Vulnerability scan
+        run: make vuln
+
+      - name: Lint workflows
+        run: make lint-ci
+
+      - name: Dashboard JSON is valid
+        run: |
+          for f in deploy/grafana/*.json; do
+            jq -e '.uid and .title and (.panels | length > 0)' "$f" >/dev/null || { echo "::error file=$f::invalid dashboard"; exit 1; }
+          done
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage
+          path: coverage.out
+          if-no-files-found: ignore
+          retention-days: 14
+
+  image:
+    name: Build and smoke-test image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build all platforms
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          build-args: VERSION=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Load native image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          load: true
+          tags: ollametry:ci
+          build-args: VERSION=${{ github.sha }}
+          cache-from: type=gha
+
+      # No Ollama in CI: the proxy must still start, report live, and answer
+      # 502 in Ollama's error shape.
+      - name: Smoke test
+        run: |
+          docker run -d --name ollametry -p 127.0.0.1:11435:11435 \
+            -e OLLAMETRY_OLLAMA_URL=http://127.0.0.1:1 -e OTEL_METRICS_EXPORTER=none \
+            ollametry:ci
+          for _ in $(seq 1 20); do docker exec ollametry /usr/local/bin/ollametry healthcheck && break; sleep 1; done
+          docker exec ollametry /usr/local/bin/ollametry healthcheck
+          code=$(curl -s -o body.json -w '%{http_code}' http://127.0.0.1:11435/api/tags)
+          test "$code" = 502 && jq -e '.error' body.json
+          docker run --rm ollametry:ci -help 2>&1 | grep -q -- '-ollama-url'
+
+      - name: Container logs
+        if: failure()
+        run: docker logs ollametry
+
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read # check out the repository
+      pull-requests: write # post the summary comment on failure
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: moderate
+          comment-summary-in-pr: on-failure
