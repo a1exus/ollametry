@@ -1,0 +1,13 @@
+{"model":"granite4.2:8b","created_at":"2026-11-01T01:18:45.664873Z","message":{"role":"assistant","content":"","thinking":"Okay"},"done":false}
+{"model":"granite4.2:8b","created_at":"2026-11-01T01:18:45.733007Z","message":{"role":"assistant","content":"","thinking":","},"done":false}
+{"model":"granite4.2:8b","created_at":"2026-11-01T01:18:45.801567Z","message":{"role":"assistant","content":"","thinking":" the"},"done":false}
+{"model":"granite4.2:8b","created_at":"2026-11-01T01:18:45.873466Z","message":{"role":"assistant","content":"","thinking":" user"},"done":false}
+{"model":"granite4.2:8b","created_at":"2026-11-01T01:18:45.949179Z","message":{"role":"assistant","content":"","thinking":" wants"},"done":false}
+{"model":"granite4.2:8b","created_at":"2026-11-01T01:18:46.017481Z","message":{"role":"assistant","content":"","thinking":" me"},"done":false}
+{"model":"granite4.2:8b","created_at":"2026-11-01T01:18:46.090486Z","message":{"role":"assistant","content":"","thinking":" to"},"done":false}
+{"model":"granite4.2:8b","created_at":"2026-11-01T01:18:46.167884Z","message":{"role":"assistant","content":"","thinking":" say"},"done":false}
+{"model":"granite4.2:8b","created_at":"2026-11-01T01:18:46.248878Z","message":{"role":"assistant","content":"","thinking":" \""},"done":false}
+{"model":"granite4.2:8b","created_at":"2026-11-01T01:18:46.322219Z","message":{"role":"assistant","content":"","thinking":"hi"},"done":false}
+{"model":"granite4.2:8b","created_at":"2026-11-01T01:18:46.406231Z","message":{"role":"assistant","content":"","thinking":"\""},"done":false}
+{"model":"granite4.2:8b","created_at":"2026-11-01T01:18:46.481449Z","message":{"role":"assistant","content":"","thinking":" in"},"done":false}
+{"model":"granite4.2:8b","created_at":"2026-11-01T01:18:46.481821Z","message":{"role":"assistant","content":""},"done":true,"done_reason":"length","total_duration":902890250,"load_duration":4588709,"prompt_eval_count":21,"prompt_eval_cached_count":20,"prompt_eval_duration":71303000,"eval_count":12,"eval_duration":820472000}

@@ -1,0 +1,1 @@
+{"id":"msg_d686603bf4b3649d3ac3324c","type":"message","role":"assistant","model":"granite4.2:8b","content":[{"type":"thinking","thinking":"Okay, the user wants me to say \"hi\" in"}],"stop_reason":"max_tokens","usage":{"input_tokens":1,"cache_read_input_tokens":20,"output_tokens":12}}

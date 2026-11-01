@@ -1,0 +1,56 @@
+version: "2"
+
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - contextcheck
+    - copyloopvar
+    - errorlint
+    - gocritic
+    - gosec
+    - misspell
+    - nilerr
+    - noctx
+    - nolintlint
+    - perfsprint
+    - revive
+    - sloglint
+    - thelper
+    - unconvert
+    - unparam
+    - usestdlibvars
+    - wrapcheck
+  settings:
+    sloglint:
+      attr-only: true
+    wrapcheck:
+      ignore-package-globs:
+        - github.com/a1exus/ollametry/*
+    revive:
+      rules:
+        - name: exported
+        - name: package-comments
+        - name: var-naming
+        - name: indent-error-flow
+        - name: errorf
+  exclusions:
+    presets:
+      - std-error-handling
+    rules:
+      # Metric names such as "gen_ai.client.token.usage" contain "token".
+      - path: internal/genai/
+        linters: [gosec]
+        text: G101
+      # Tests may ignore errors from helpers writing to recorders and pipes.
+      - path: _test\.go
+        linters: [gosec, wrapcheck, errcheck, noctx, bodyclose]
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/a1exus/ollametry
