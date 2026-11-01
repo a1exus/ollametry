@@ -8,6 +8,9 @@ SERVICE          ?= ollametry
 PROXY_URL        ?= http://127.0.0.1:11435
 ADMIN_URL        ?= http://127.0.0.1:11436
 OLLAMA_URL       ?= http://127.0.0.1:11434
+GRAFANA_URL      ?= http://127.0.0.1:3000
+GRAFANA_USER     ?= admin
+DASHBOARD        := deploy/grafana/ollametry.json
 WAIT_TIMEOUT     ?= 120
 CURL             := curl --silent --show-error --fail --max-time 10
 
@@ -104,7 +107,19 @@ smoke: ## Send one streamed chat request through the proxy (MODEL=<name>)
 	@[[ -n "$${MODEL:-}" ]] || { echo 'smoke: set MODEL, e.g. make smoke MODEL=granite4.2:8b' >&2; exit 1; }
 	@curl --silent --show-error --fail --max-time 300 '$(PROXY_URL)/api/chat' \
 		--data "{\"model\":\"$${MODEL}\",\"messages\":[{\"role\":\"user\",\"content\":\"Say hi in three words.\"}],\"options\":{\"num_predict\":32}}" \
-		| jq -r 'select(.done) | "eval_count=\(.eval_count) prompt_eval_count=\(.prompt_eval_count) done_reason=\(.done_reason)"'
+		| tail -n 1; echo
+
+##@ Grafana
+
+.PHONY: dashboard
+dashboard: ## Import the dashboard into Grafana (prompts for GRAFANA_USER's password; GRAFANA_USER= for none)
+	@payload=$$(mktemp); trap 'rm -f "$$payload"' EXIT; \
+		{ printf '{"overwrite":true,"dashboard":'; cat '$(DASHBOARD)'; printf '}'; } >"$$payload"; \
+		auth=(); [[ -z '$(GRAFANA_USER)' ]] || auth=(--user '$(GRAFANA_USER)'); \
+		curl --silent --show-error --fail-with-body "$${auth[@]}" \
+			--header 'Content-Type: application/json' --data-binary "@$$payload" \
+			'$(GRAFANA_URL)/api/dashboards/db' >/dev/null \
+		&& echo 'Imported: $(GRAFANA_URL)/d/ollametry'
 
 ##@ Config
 

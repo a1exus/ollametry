@@ -13,3 +13,6 @@ coverage.out
 # Tooling workspaces
 .claude/worktrees/
 .superpowers/
+
+# Browser automation output
+.playwright-mcp/
