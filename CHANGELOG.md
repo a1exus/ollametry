@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `ollama.build.info` gauge carrying `ollama.version`; `ollama.up` no longer has attributes, so up and down are one series.
+
 - Transparent reverse proxy for Ollama (`ollametry`) that relays requests and streams unchanged, flushes every write, and cancels the upstream request when the client hangs up.
 - Response decoding for Ollama's native API (`/api/generate`, `/api/chat`, `/api/embed`, `/api/embeddings`), the OpenAI-compatible API (`/v1/chat/completions`, `/v1/completions`, `/v1/embeddings`), the Anthropic Messages API (`/v1/messages`) and the Responses API (`/v1/responses`), streamed or not.
 - OpenTelemetry GenAI metrics: `gen_ai.client.operation.duration`, `gen_ai.client.token.usage`, `gen_ai.server.time_to_first_token`, `gen_ai.server.time_per_output_token`; plus `ollama.prompt.cached_tokens`, `ollama.model.load.duration`, `ollama.prompt.eval.duration`, `ollama.inference.active`.
@@ -25,6 +27,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tests for the meter provider: histogram buckets (including the `http.server.request.duration` view), resource and `OTEL_SERVICE_NAME`, cardinality limit, Go runtime metrics.
 - `README.md`, `AGENTS.md`, `CLAUDE.md`, `CHANGELOG.md`.
 - MIT license (`LICENSE`), also declared on the image as `org.opencontainers.image.licenses`.
+
+### Fixed
+
+- `ollama.up` kept reading 1 for about 5 minutes after Ollama stopped: up and down were separate series.
+- Dashboard model panels showed unloaded models for about 5 minutes; they now ignore samples older than 45 s.
+- Unknown model names in requests created a `gen_ai.request.model` series each, permanently for `ollama.inference.active`; they are now recorded as `_OTHER`.
+- Embeddings recorded an output token usage of 0.
+- Protocol upgrades (`101 Switching Protocols`) failed with 502.
+- Requests cut off by a shutdown timeout lost their metrics: shutdown now waits for handlers before the final flush.
+- A poll interrupted by shutdown reported Ollama as down.
 
 ### Security
 
