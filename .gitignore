@@ -1,9 +1,20 @@
 # Local configuration and secrets
 .env
 
-# Build and test output
+# Go build and test output (GitHub's Go template)
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.*
+*.coverprofile
+profile.cov
+go.work
+go.work.sum
 /bin/
-coverage.out
 
 # Claude Code local settings
 .claude/settings.local.json
