@@ -1,0 +1,47 @@
+name: ollama
+
+# Ollama runs on the macOS host, not in Docker, and has no metrics endpoint.
+# ollametry is a transparent proxy in front of it: clients that use
+# http://127.0.0.1:11435 instead of :11434 are measured. Metrics go over OTLP
+# to otel-lgtm (~/opt/grafana) on its compose network.
+
+services:
+  ollametry:
+    build:
+      context: .
+      args:
+        VERSION: ${VERSION:-dev}
+    image: ollametry:${VERSION:-dev}
+    container_name: ollametry
+    restart: unless-stopped
+    environment:
+      OLLAMETRY_OLLAMA_URL: ${OLLAMA_UPSTREAM:-http://host.docker.internal:11434}
+      OLLAMETRY_POLL_INTERVAL: ${OLLAMETRY_POLL_INTERVAL:-15s}
+      OLLAMETRY_LOG_LEVEL: ${OLLAMETRY_LOG_LEVEL:-info}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-lgtm:4318}
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_METRIC_EXPORT_INTERVAL: ${OTEL_METRIC_EXPORT_INTERVAL:-15000}
+      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-deployment.environment.name=local}
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${PROXY_PORT:-11435}:11435"
+      - "${BIND_ADDRESS:-127.0.0.1}:${ADMIN_PORT:-11436}:11436"
+    networks:
+      - default
+      - grafana
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: ${OLLAMETRY_MEM_LIMIT:-256m}
+    stop_grace_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+networks:
+  grafana:
+    name: ${GRAFANA_NETWORK:-grafana_default}
+    external: true
