@@ -153,6 +153,7 @@ make test     # go test -race
 make lint     # golangci-lint (.golangci.yml)
 make vuln     # govulncheck
 make check    # all three; run before every commit
+make fuzz     # fuzz the parsers, FUZZTIME=30s per target
 make cover    # coverage summary
 ```
 
