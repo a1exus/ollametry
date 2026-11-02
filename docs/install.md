@@ -16,6 +16,9 @@
 | [Binary](#binary) as a [launchd service](#macos-service-launchd) | Ollama runs natively on a Mac and you want ollametry next to it, without Docker |
 | [Container image](#container-image) | You run containers elsewhere and want a published image |
 
+On Linux, Apple `container` and Windows WSL 2, see
+[container environments](containers.md) for reaching Ollama on the host.
+
 Every way serves the same proxy (`:11435`), health and `/metrics`
 (`:11436`), and OTLP push (see [configuration](configuration.md)).
 

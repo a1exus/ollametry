@@ -78,6 +78,7 @@ lists every target.
 | Guide | Covers |
 |---|---|
 | [Install](docs/install.md) | Binaries for macOS and Linux, a launchd service, the container image, `go install` |
+| [Container environments](docs/containers.md) | Linux Docker Engine, macOS Docker Desktop or Apple `container`, Windows WSL 2: reaching Ollama on the host |
 | [Clients](docs/clients.md) | Pointing the Ollama CLI and OpenAI/Anthropic SDKs at the proxy; measuring every client |
 | [Metrics](docs/metrics.md) | Every metric and attribute, `error.type`, limits, writing PromQL against OTLP series |
 | [Prometheus exporter](docs/prometheus.md) | Scraping `/metrics`, running without otel-lgtm, how it compares with OTLP, alerting and recording rules |
