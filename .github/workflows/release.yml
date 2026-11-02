@@ -2,8 +2,8 @@ name: Release
 
 # Pushing a tag vX.Y.Z publishes ghcr.io/<owner>/ollametry for amd64 and
 # arm64 with SBOM and provenance attestations, builds reproducible binary
-# archives for macOS and Linux with provenance attestations, then creates a
-# GitHub release carrying the archives and SHA256SUMS.
+# archives for macOS, Linux and Windows with provenance attestations, then
+# creates a GitHub release carrying the archives and SHA256SUMS.
 #
 # Running it manually (workflow_dispatch) is a dry run: it builds the image
 # and the archives and renders the release notes from [Unreleased], but logs

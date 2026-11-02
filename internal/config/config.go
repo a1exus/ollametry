@@ -56,7 +56,7 @@ func Load(args []string, getenv func(string) string, usage io.Writer) (Config, e
 	fs.SetOutput(usage)
 
 	listen := fs.String("listen", env("LISTEN_ADDR", DefaultListenAddr), "proxy listen address [OLLAMETRY_LISTEN_ADDR]")
-	admin := fs.String("admin-listen", env("ADMIN_ADDR", DefaultAdminAddr), "health endpoint listen address [OLLAMETRY_ADMIN_ADDR]")
+	admin := fs.String("admin-listen", env("ADMIN_ADDR", DefaultAdminAddr), "health and metrics endpoint listen address [OLLAMETRY_ADMIN_ADDR]")
 	ollamaURL := fs.String("ollama-url", env("OLLAMA_URL", DefaultOllamaURL), "Ollama base URL [OLLAMETRY_OLLAMA_URL]")
 	poll := fs.String("poll-interval", env("POLL_INTERVAL", DefaultPollInterval.String()), "how often to poll /api/ps and /api/tags [OLLAMETRY_POLL_INTERVAL]")
 	shutdown := fs.String("shutdown-timeout", env("SHUTDOWN_TIMEOUT", DefaultShutdownTimeout.String()), "how long to let in-flight requests finish on shutdown [OLLAMETRY_SHUTDOWN_TIMEOUT]")

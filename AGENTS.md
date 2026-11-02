@@ -29,13 +29,13 @@ Operating rules for AI agents working in this repo. Architecture details and rat
 ## Code conventions
 
 - Go: `fmt.Errorf("context: %w", err)`; no `panic` outside re-raising `http.ErrAbortHandler`; `context.Context` first; `any`, not `interface{}`; imports grouped stdlib → external → `github.com/a1exus/ollametry` (enforced by `make fmt`).
-- Tests are table-driven with `t.Run`, use only the standard library and the OTel SDK's `ManualReader`, and new response shapes get a recorded fixture in `internal/dialect/testdata` (record with `num_predict`/`max_tokens` capped so fixtures stay small).
+- Tests are table-driven with `t.Run` and use the standard library, the OTel SDK's `ManualReader`, and test-only decoders (`go.yaml.in/yaml/v3` for the OpenAPI contract, the OTLP protobuf types for the fake collector); and new response shapes get a recorded fixture in `internal/dialect/testdata` (record with `num_predict`/`max_tokens` capped so fixtures stay small).
 - Errors name the component and what was expected (`ollama-url: "ftp://x" must be an absolute http or https URL`).
 
 ## Verification (run after every change)
 
 ```sh
-make check          # golangci-lint, actionlint + zizmor, go test -race, govulncheck
+make check          # golangci-lint, actionlint + zizmor, OpenAPI, dashboard and rule checks, go test -race, govulncheck
 make up             # waits for the container healthcheck
 make health
 make smoke MODEL=<an installed model>

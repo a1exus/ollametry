@@ -65,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Docs corrected after an audit against the code: oversized request bodies are still measured (only oversized response records go undecoded); the admin listener also serves `/metrics`; the GPU-container recipe checks `/readyz` instead of `make health`, which needs Ollama on the host port; `make check` and release descriptions list everything they run and build.
 - `ollama.up` kept reading 1 for about 5 minutes after Ollama stopped: up and down were separate series.
 - Dashboard model panels showed unloaded models for about 5 minutes; they now ignore samples older than 45 s.
 - Unknown model names in requests created a `gen_ai.request.model` series each, permanently for `ollama.inference.active`; they are now recorded as `_OTHER`.

@@ -5,16 +5,17 @@
 ## ollametry
 
 Flags take precedence over `OLLAMETRY_*` variables; Compose sets the
-variables. `docker run --rm ollametry:dev -help` lists the flags.
+variables. `ollametry -help` lists the flags; for the container `make up`
+started, `docker compose exec ollametry ollametry -help`.
 
 | Variable | Default (binary) | Compose default | Purpose |
 |---|---|---|---|
 | `OLLAMETRY_LISTEN_ADDR` | `127.0.0.1:11435` | `0.0.0.0:11435` (image) | Proxy listener |
-| `OLLAMETRY_ADMIN_ADDR` | `127.0.0.1:11436` | `0.0.0.0:11436` (image) | `/livez`, `/readyz` |
+| `OLLAMETRY_ADMIN_ADDR` | `127.0.0.1:11436` | `0.0.0.0:11436` (image) | `/livez`, `/readyz`, `/metrics` |
 | `OLLAMETRY_OLLAMA_URL` | `http://127.0.0.1:11434` | `http://host.docker.internal:11434` | Upstream Ollama |
 | `OLLAMETRY_POLL_INTERVAL` | `15s` | `15s` | `/api/ps` and `/api/tags` polling |
 | `OLLAMETRY_SHUTDOWN_TIMEOUT` | `30s` | `30s` | Grace period for in-flight streams |
-| `OLLAMETRY_MAX_INSPECT_BYTES` | `33554432` | same | Largest request body / response record decoded; larger ones pass through unmeasured |
+| `OLLAMETRY_MAX_INSPECT_BYTES` | `33554432` | same | Largest response record decoded (larger ones are relayed but not decoded) and request body buffered to read the model (larger ones are read from their first part) |
 | `OLLAMETRY_CARDINALITY_LIMIT` | `2000` | same | Attribute sets per metric |
 | `OLLAMETRY_LOG_LEVEL`, `OLLAMETRY_LOG_FORMAT` | `info`, `json` | same | Logging (`text` for humans) |
 | `OLLAMETRY_PROMETHEUS` | `true` | same | Serve Prometheus metrics at `/metrics` on the admin listener ([Prometheus exporter](prometheus.md)) |
@@ -53,7 +54,7 @@ committed):
 |---|---|---|
 | `BIND_ADDRESS` | `127.0.0.1` | Host address the ports bind to |
 | `PROXY_PORT` | `11435` | Host port for the proxy |
-| `ADMIN_PORT` | `11436` | Host port for `/livez` and `/readyz` |
+| `ADMIN_PORT` | `11436` | Host port for `/livez`, `/readyz` and `/metrics` |
 | `OLLAMA_UPSTREAM` | `http://host.docker.internal:11434` | Ollama as seen from the container |
 | `GRAFANA_NETWORK` | `grafana_default` | External network shared with `otel-lgtm` |
 | `OLLAMETRY_MEM_LIMIT` | `256m` | Container memory limit |

@@ -220,7 +220,7 @@ from this repository's Compose project), so ollametry reaches it by name:
 OLLAMA_UPSTREAM=http://ollama-gpu:11434 make up
 docker run -d --gpus=all --network ollama_default --name ollama-gpu \
   -v ollama:/root/.ollama ollama/ollama
-make health
+curl -s http://127.0.0.1:11436/readyz      # ok once ollametry reaches Ollama
 ```
 
 The Ollama image listens on all interfaces inside the container, so the Host
