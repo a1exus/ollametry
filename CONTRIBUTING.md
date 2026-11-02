@@ -18,11 +18,12 @@ linters run in pinned containers.
 ```sh
 make check   # golangci-lint, workflow lint, go test -race, govulncheck
 make fuzz    # fuzz the parsers (FUZZTIME=30s per target)
-make up      # run against a local Ollama (needs ~/opt/grafana's network, see README)
+make up      # run against a local Ollama (needs ~/opt/grafana's network, see docs/operations.md)
 make smoke MODEL=<an installed model>
 ```
 
 [`AGENTS.md`](AGENTS.md) lists the project's invariants and conventions, and
+[`docs/development.md`](docs/development.md) covers the toolchain, tests and CI;
 [`CLAUDE.md`](CLAUDE.md) explains the architecture and the API quirks the
 decoders handle. Both apply to human contributors too.
 
@@ -36,7 +37,7 @@ decoders handle. Both apply to human contributors too.
 - Add a line to `CHANGELOG.md` under `## [Unreleased]`
   ([Keep a Changelog](https://keepachangelog.com/en/1.1.0/)).
 - Changing a metric name or attribute is a breaking change: update the
-  dashboard, README and CHANGELOG in the same pull request.
+  dashboard, `docs/metrics.md` and CHANGELOG in the same pull request.
 - `make check` must pass; CI runs the same targets.
 
 ## Releases

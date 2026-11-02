@@ -33,6 +33,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dependabot for Go modules, GitHub Actions and the base image, weekly with a 14-day cooldown.
 - `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), issue forms, pull request template, `CODEOWNERS`, `.editorconfig`; README badges.
 
+### Changed
+
+- `docker-compose.yml` renamed to `compose.yaml`; the service is never pulled (`pull_policy: build`) and is limited to 256 processes.
+- Makefile lifecycle targets wrap `docker compose` one to one: `up` (`up -d --build --wait`), `down`, `start`, `stop`, `restart`, `build`, `rebuild`, `clean`, `ps` (`--all`), `logs` (`--follow`, `TAIL`), `top`, `images`.
+- Dockerfile fails on any build-check warning (`# check=error=true`) and copies the binary with `COPY --link`.
+- CI runs lint and scan, test and fuzz as parallel matrix legs with module, build and lint caches (`actions/cache`, saved only from `main`); new `make tidy-check`, `make dashboard-check` and `make ci-lint`; `make check` also validates the dashboard. Image builds no longer set up QEMU, which the cross-compiling Dockerfile never used.
+- README is now an overview with a table of contents; details moved to `docs/` (clients, metrics, configuration, operations with troubleshooting, development, releases).
+
 ### Fixed
 
 - `ollama.up` kept reading 1 for about 5 minutes after Ollama stopped: up and down were separate series.
