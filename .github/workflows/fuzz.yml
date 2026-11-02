@@ -1,0 +1,74 @@
+name: Fuzz
+
+# Fuzzing explores random inputs, so it is no pull request gate: a find would
+# fail whichever change happened to be running. Pull requests replay the seed
+# corpus and every saved failure through `make test`; this workflow searches
+# for new failures nightly, one parallel leg per target.
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+    inputs:
+      fuzztime:
+        description: Fuzzing time per target (Go duration)
+        default: 10m
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  fuzz:
+    name: ${{ matrix.target }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - ./internal/dialect:FuzzFramer
+          - ./internal/dialect:FuzzDecoders
+          - ./internal/proxy:FuzzModelFromPrefix
+    env:
+      CACHE_GOMOD: ${{ github.workspace }}/.cache/gomod
+      CACHE_GOBUILD: ${{ github.workspace }}/.cache/gobuild
+      FUZZ_TARGETS: ${{ matrix.target }}
+      FUZZTIME: ${{ inputs.fuzztime || '10m' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Restore Go module cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .cache/gomod
+          key: gomod-${{ hashFiles('go.sum', 'Makefile') }}
+          restore-keys: gomod-
+
+      - name: Restore build cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .cache/gobuild
+          key: build-cover-${{ hashFiles('go.sum', 'Makefile') }}-
+          restore-keys: build-cover-
+
+      # FUZZTIME reaches a shell inside make; accept only a Go duration.
+      - name: make fuzz
+        run: |
+          [[ "$FUZZTIME" =~ ^[0-9]+(ms|s|m|h)$ ]] || { echo "::error::invalid fuzztime: $FUZZTIME"; exit 1; }
+          make fuzz
+
+      # A failing input is written to testdata/fuzz/<Target>/ in the package.
+      # Download it, commit it with the fix, and `make test` replays it.
+      - name: Upload failing inputs
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fuzz-failures-${{ strategy.job-index }}
+          path: internal/**/testdata/fuzz/
+          if-no-files-found: ignore
+          retention-days: 30
