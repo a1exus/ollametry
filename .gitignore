@@ -34,9 +34,6 @@ go.work.sum
 # Local Compose overrides (docs/releases.md)
 /compose.override.yaml
 
-# Release archives (make dist)
-/dist/
-
 # Benchmark results (make bench)
 /bench.txt
 /old.txt

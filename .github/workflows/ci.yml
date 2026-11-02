@@ -94,35 +94,6 @@ jobs:
             .cache/golangci
           key: ${{ steps.build.outputs.cache-primary-key }}
 
-  # Linux runs the containerized make targets above; macOS and Windows runners
-  # have no Docker, so they run the same tests with Go directly. This is what
-  # backs the release binaries for those platforms.
-  native:
-    name: Tests (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-15, windows-2025]
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: go.mod
-          cache: false # no cache written from pull requests
-
-      # -race needs cgo, which the Windows runner's Go setup lacks.
-      - name: Unit and integration tests
-        shell: bash
-        run: |
-          race=-race
-          if [ "$RUNNER_OS" = Windows ]; then race=; fi
-          go test $race -count=1 -tags integration ./...
-
   image:
     name: Build and smoke-test image
     runs-on: ubuntu-24.04

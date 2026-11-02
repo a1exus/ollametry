@@ -149,7 +149,7 @@ openapi-check: ## Lint api/openapi.yaml with Spectral (the contract test checks 
 docs-check: ## Lint Markdown (markdownlint-cli2) and check local links and anchors (lychee, offline)
 	docker run --rm -v "$(CURDIR)":/workdir davidanson/markdownlint-cli2:$(MARKDOWNLINT_VERSION)
 	docker run --rm -v "$(CURDIR)":/input:ro -w /input lycheeverse/lychee:$(LYCHEE_VERSION) \
-		--offline --include-fragments --no-progress --exclude-path .cache --exclude-path dist './**/*.md'
+		--offline --include-fragments --no-progress --exclude-path .cache './**/*.md'
 
 .PHONY: dashboard-check
 dashboard-check: ## Validate the Grafana dashboard JSON
@@ -162,13 +162,6 @@ dashboard-check: ## Validate the Grafana dashboard JSON
 lint-ci: ## Lint GitHub Actions workflows (actionlint, zizmor)
 	docker run --rm -v "$(CURDIR)":/repo -w /repo rhysd/actionlint:$(ACTIONLINT_VERSION) -color
 	docker run --rm -v "$(CURDIR)":/repo:ro -w /repo ghcr.io/zizmorcore/zizmor:$(ZIZMOR_VERSION) --offline .
-
-DIST_PLATFORMS ?= darwin/arm64 darwin/amd64 linux/arm64 linux/amd64 windows/amd64 windows/arm64
-
-.PHONY: dist
-dist: ## Build reproducible release archives and SHA256SUMS into dist/ (VERSION=vX.Y.Z)
-	$(DOCKER_RUN) -e VERSION='$(VERSION)' -e PLATFORMS='$(DIST_PLATFORMS)' \
-		-e SOURCE_DATE_EPOCH="$$(git log -1 --format=%ct)" golang:$(GO_VERSION) sh tools/dist.sh
 
 .PHONY: notices
 notices: ## Regenerate the Go module table in THIRD_PARTY_NOTICES.md (go-licenses)

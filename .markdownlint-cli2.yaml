@@ -13,6 +13,5 @@ globs:
   - "**/*.md"
 ignores:
   - ".cache/**"
-  - "dist/**"
   # The Contributor Covenant, kept verbatim.
   - "CODE_OF_CONDUCT.md"

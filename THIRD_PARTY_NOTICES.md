@@ -137,7 +137,7 @@ ollametry.
 
 | Action | License |
 | --- | --- |
-| [actions/checkout](https://github.com/actions/checkout), [actions/cache](https://github.com/actions/cache), [actions/upload-artifact](https://github.com/actions/upload-artifact), [actions/download-artifact](https://github.com/actions/download-artifact), [actions/setup-go](https://github.com/actions/setup-go), [actions/dependency-review-action](https://github.com/actions/dependency-review-action), [actions/attest-build-provenance](https://github.com/actions/attest-build-provenance) | MIT |
+| [actions/checkout](https://github.com/actions/checkout), [actions/cache](https://github.com/actions/cache), [actions/upload-artifact](https://github.com/actions/upload-artifact), [actions/dependency-review-action](https://github.com/actions/dependency-review-action), [actions/attest-build-provenance](https://github.com/actions/attest-build-provenance) | MIT |
 | [github/codeql-action](https://github.com/github/codeql-action) | MIT |
 | [docker/setup-buildx-action](https://github.com/docker/setup-buildx-action), [docker/login-action](https://github.com/docker/login-action), [docker/metadata-action](https://github.com/docker/metadata-action), [docker/build-push-action](https://github.com/docker/build-push-action) | Apache-2.0 |
 | [ossf/scorecard-action](https://github.com/ossf/scorecard-action) | Apache-2.0 |
