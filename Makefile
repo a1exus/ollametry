@@ -9,6 +9,7 @@ PROXY_URL        ?= http://127.0.0.1:11435
 ADMIN_URL        ?= http://127.0.0.1:11436
 OLLAMA_URL       ?= http://127.0.0.1:11434
 WAIT_TIMEOUT     ?= 120
+GRAFANA_NETWORK  ?= grafana_default
 TAIL             ?= 200
 CURL             := curl --silent --show-error --fail --max-time 10
 
@@ -43,17 +44,48 @@ help: ## Show this help
 
 ##@ Develop
 
+# Test layers: unit tests have no build tag; integration tests (modules wired
+# over real HTTP with fake Ollama and OTLP endpoints) need -tags integration;
+# E2E tests (test/e2e, -tags e2e) need a real Ollama and otel-lgtm.
 .PHONY: test
-test: ## Run unit tests with the race detector
+test: ## Run unit and integration tests (hermetic) with the race detector
+	$(GO) test -race -count=1 -tags integration ./...
+
+.PHONY: test-unit
+test-unit: ## Run unit tests only
 	$(GO) test -race -count=1 ./...
 
+.PHONY: test-integration
+test-integration: ## Run integration tests (also compiles in the unit tests)
+	$(GO) test -race -count=1 -tags integration ./...
+
+E2E_MODEL           ?= granite4.2:8b
+E2E_HERMETIC_MODEL  ?= smollm2:135m
+E2E_METRICS_TIMEOUT ?= 90s
+E2E_COMPOSE         := $(COMPOSE) --file test/e2e/compose.yaml
+# Runs the E2E tests in a container on network $(1) against model $(2).
+E2E_RUN = $(DOCKER_RUN) --network '$(1)' -e E2E_MODEL='$(2)' \
+	-e E2E_METRICS_TIMEOUT='$(E2E_METRICS_TIMEOUT)' golang:$(GO_VERSION) \
+	go test -count=1 -v -tags e2e ./test/e2e
+
+.PHONY: e2e
+e2e: validate ## E2E tests against the running stack (make up) and host Ollama (E2E_MODEL=granite4.2:8b)
+	$(call E2E_RUN,$(GRAFANA_NETWORK),$(E2E_MODEL))
+
+.PHONY: e2e-hermetic
+e2e-hermetic: ## E2E tests on a throwaway Ollama + otel-lgtm + ollametry stack, as CI runs them
+	@trap 'status=$$?; [ $$status -eq 0 ] || $(E2E_COMPOSE) logs --no-color ollametry | tail -n 50; $(E2E_COMPOSE) down --volumes --remove-orphans; exit $$status' EXIT; \
+	$(E2E_COMPOSE) up --detach --build --wait --wait-timeout 300; \
+	$(E2E_COMPOSE) exec -T ollama ollama pull '$(E2E_HERMETIC_MODEL)'; \
+	$(call E2E_RUN,ollametry-e2e_default,$(E2E_HERMETIC_MODEL))
+
 .PHONY: cover
-cover: ## Run tests and print per-function coverage
-	$(GO) test -race -count=1 -coverprofile=coverage.out ./...
+cover: ## Run unit and integration tests and print per-function coverage
+	$(GO) test -race -count=1 -tags integration -coverprofile=coverage.out ./...
 	$(GO) tool cover -func=coverage.out | tail -n 25
 
 FUZZTIME ?= 30s
-FUZZ_TARGETS := ./internal/dialect:FuzzFramer ./internal/dialect:FuzzDecoders \
+FUZZ_TARGETS ?= ./internal/dialect:FuzzFramer ./internal/dialect:FuzzDecoders \
 	./internal/proxy:FuzzModelFromPrefix
 
 .PHONY: fuzz

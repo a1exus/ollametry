@@ -1,0 +1,54 @@
+name: ollametry-e2e
+
+# A throwaway stack for E2E tests (make e2e-hermetic, and CI): Ollama, otel-lgtm
+# and ollametry built from this checkout, on one private network. Nothing is
+# published to the host; the test runner joins the network. Short poll and
+# export intervals keep the test fast.
+
+services:
+  ollama:
+    image: ollama/ollama:0.40.13@sha256:b2f0122c476bc9fe7ce679d8bb4bd555351e25e2554eefb156f61cb0a89cf429
+    environment:
+      OLLAMA_KEEP_ALIVE: 10m
+    volumes:
+      - models:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  otel-lgtm:
+    image: grafana/otel-lgtm:0.39.0@sha256:4c8056c9c05fcb3c8fd93800e85334bfd79b4d0271b47a54a121a64af41fe1fe
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/ready && curl -fsS -o /dev/null http://localhost:9090/-/ready"]
+      interval: 2s
+      timeout: 5s
+      retries: 90
+
+  ollametry:
+    build:
+      context: ../..
+      args:
+        VERSION: e2e
+    image: ollametry:e2e
+    pull_policy: build
+    environment:
+      OLLAMETRY_OLLAMA_URL: http://ollama:11434
+      OLLAMETRY_POLL_INTERVAL: 1s
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-lgtm:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_METRIC_EXPORT_INTERVAL: "1000"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      ollama:
+        condition: service_healthy
+      otel-lgtm:
+        condition: service_healthy
+
+volumes:
+  models:
