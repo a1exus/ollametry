@@ -25,9 +25,8 @@ volumes `ollametry-gomod`, `ollametry-gobuild` and `ollametry-golangci`.
 | Linux | [Docker Engine](https://docs.docker.com/engine/install/), `make` |
 | Windows | [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/tutorials/wsl-containers) with Docker Desktop or Docker Engine; run `make` in the WSL shell with the repository on the Linux file system |
 
-Without Docker, plain `go test -tags integration ./...` works with the Go
-version in `go.mod`. The code only ships for Linux, in the container, so CI
-tests it on Linux.
+The code only ships for Linux, in the container, so tests run on Linux: in the
+pinned golang container locally, and on Linux runners in CI.
 
 | Target | Does |
 | --- | --- |

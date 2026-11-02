@@ -43,7 +43,8 @@ decoders handle. Both apply to human contributors too.
   ([Keep a Changelog](https://keepachangelog.com/en/1.1.0/)).
 - Changing a metric name or attribute is a breaking change: update the
   dashboard, `docs/metrics.md` and CHANGELOG in the same pull request.
-- `make check` must pass; CI runs the same targets.
+- `make check` must pass; CI runs the same checks plus `tidy-check`,
+  `versions-check` and `notices-check` (`make ci-lint`).
 - `main` has linear history and accepts only rebase merges. Keep your branch
   current with `git rebase origin/main` (not by merging `main` in); the
   branch must be up to date and every required check green before it can

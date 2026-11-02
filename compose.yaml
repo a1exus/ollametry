@@ -1,6 +1,7 @@
 name: ollama
 
-# Ollama runs on the macOS host, not in Docker, and has no metrics endpoint.
+# Ollama runs on the host (on native Linux it may also run in a container with
+# the GPU) and has no metrics endpoint.
 # ollametry is a transparent proxy in front of it: clients that use
 # http://127.0.0.1:11435 instead of :11434 are measured. Metrics go over OTLP
 # to otel-lgtm (~/opt/grafana) on its compose network.

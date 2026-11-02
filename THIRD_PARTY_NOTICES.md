@@ -124,6 +124,7 @@ ollametry.
 | [golangci-lint](https://github.com/golangci/golangci-lint) | [GPL-3.0](https://github.com/golangci/golangci-lint/blob/main/LICENSE) | Linting |
 | [govulncheck](https://github.com/golang/vuln) | [BSD-3-Clause](https://github.com/golang/vuln/blob/master/LICENSE) | Vulnerability scanning |
 | [go-licenses](https://github.com/google/go-licenses) | [Apache-2.0](https://github.com/google/go-licenses/blob/master/LICENSE) | Generating this file |
+| [benchstat](https://github.com/golang/perf) | [BSD-3-Clause](https://github.com/golang/perf/blob/master/LICENSE) | Comparing benchmark runs |
 | [actionlint](https://github.com/rhysd/actionlint) | [MIT](https://github.com/rhysd/actionlint/blob/main/LICENSE.txt) | Workflow linting |
 | [zizmor](https://github.com/zizmorcore/zizmor) | [MIT](https://github.com/zizmorcore/zizmor/blob/main/LICENSE) | Workflow security analysis |
 | [jq](https://github.com/jqlang/jq) | [MIT](https://github.com/jqlang/jq/blob/master/COPYING) (documentation CC BY 3.0) | Dashboard validation |

@@ -1,5 +1,6 @@
 # ollametry
 
+[![Release](https://img.shields.io/github/v/release/a1exus/ollametry)](https://github.com/a1exus/ollametry/releases)
 [![CI](https://github.com/a1exus/ollametry/actions/workflows/ci.yml/badge.svg)](https://github.com/a1exus/ollametry/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/a1exus/ollametry/actions/workflows/codeql.yml/badge.svg)](https://github.com/a1exus/ollametry/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/a1exus/ollametry/badge)](https://scorecard.dev/viewer/?uri=github.com/a1exus/ollametry)
@@ -23,7 +24,7 @@ usage statistics Ollama already returns in every response. Requests and
 responses pass through byte for byte, streaming included.
 
 ```text
- clients ──► ollametry :11435 ──► Ollama :11434 (on the host: macOS, Linux or Windows)
+ clients ──► ollametry :11435 ──► Ollama :11434 (on the host; native Linux: also a container)
                  │
                  ├─ per request: gen_ai.* and http.server.* metrics
                  └─ every 15 s:  /api/ps, /api/tags → ollama.* gauges
