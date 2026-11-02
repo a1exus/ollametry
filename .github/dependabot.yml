@@ -44,3 +44,18 @@ updates:
       default-days: 14
     commit-message:
       prefix: image
+
+  # The local E2E stack pins Ollama and otel-lgtm by tag and digest.
+  - package-ecosystem: docker-compose
+    directory: /test/e2e
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 14
+    commit-message:
+      prefix: e2e
+    groups:
+      e2e-images:
+        patterns:
+          - "*"

@@ -45,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Dependabot also updates the Ollama and otel-lgtm images pinned in `test/e2e/compose.yaml`; `make versions-check` (in CI) fails when `go.mod`, the Makefile and the Dockerfile name different Go versions.
 - The proxy reuses its 32 KiB copy buffers instead of allocating one per request: 53 % less memory and 13 % less time per proxied request (benchstat, 8 runs, p=0.000).
 - Fuzzing no longer runs on pull requests: random exploration made an unrelated change fail when it found something, and `make test` already replays the corpus. CI legs are now lint and scan, unit tests, integration tests (with coverage) and E2E.
 - `docker-compose.yml` renamed to `compose.yaml`; the service is never pulled (`pull_policy: build`) and is limited to 256 processes.
