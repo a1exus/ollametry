@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"encoding/json"
 	"io"
 	"log/slog"
 	"net"
@@ -729,4 +730,100 @@ func TestProxyWaitBlocksUntilHandlersRecord(t *testing.T) {
 		t.Error("Wait returned before the request was recorded")
 	}
 	<-done
+}
+
+// CodeQL flags client values reaching the logs (go/log-injection). slog's
+// handlers escape them, so a value cannot start a forged line; this proves it
+// for both formats, and that client-controlled values stay bounded.
+func TestProxyLogsCannotBeForged(t *testing.T) {
+	t.Parallel()
+	forged := "m\n{\"level\":\"ERROR\",\"msg\":\"forged\"}\nlevel=ERROR msg=forged"
+	newHandler := map[string]func(io.Writer) slog.Handler{
+		"json": func(w io.Writer) slog.Handler {
+			return slog.NewJSONHandler(w, &slog.HandlerOptions{Level: slog.LevelDebug})
+		},
+		"text": func(w io.Writer) slog.Handler {
+			return slog.NewTextHandler(w, &slog.HandlerOptions{Level: slog.LevelDebug})
+		},
+	}
+	for format, handler := range newHandler {
+		t.Run(format, func(t *testing.T) {
+			t.Parallel()
+			var mu sync.Mutex
+			var buf bytes.Buffer
+			logger := slog.New(handler(&lockedWriter{mu: &mu, w: &buf}))
+			upstream := replay(http.StatusNotFound, "application/json", []byte(`{"error":"model not found"}`))
+			h := newHarness(t, upstream, 1<<20, func(c *Config) { c.Logger = logger })
+
+			body, _ := json.Marshal(map[string]any{"model": forged, "messages": []any{}})
+			h.post("/api/chat", string(body))
+			h.waitRecorded()
+
+			mu.Lock()
+			out := buf.String()
+			mu.Unlock()
+			lines := strings.Split(strings.TrimSuffix(out, "\n"), "\n")
+			if len(lines) != 1 {
+				t.Fatalf("one request logged %d lines, want 1:\n%s", len(lines), out)
+			}
+			if format == "json" {
+				var rec map[string]any
+				if err := json.Unmarshal([]byte(lines[0]), &rec); err != nil {
+					t.Fatalf("log line is not one JSON object: %v\n%s", err, lines[0])
+				}
+				if rec["model"] != forged {
+					t.Errorf("model = %q, want the client value, escaped", rec["model"])
+				}
+			}
+			if strings.Contains(out, "\nlevel=ERROR") || strings.Contains(out, "\n{\"level\":\"ERROR\"") {
+				t.Errorf("a client value started a log line:\n%s", out)
+			}
+		})
+	}
+}
+
+func TestProxyLogsBoundClientValues(t *testing.T) {
+	t.Parallel()
+	var mu sync.Mutex
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&lockedWriter{mu: &mu, w: &buf}, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	// Nothing listens on the upstream: the error path logs method and path.
+	h := newHarnessFor(t, "http://127.0.0.1:1", 1<<20, func(c *Config) { c.Logger = logger })
+
+	req, _ := http.NewRequestWithContext(t.Context(), strings.Repeat("X", 5000), h.front.URL+"/"+strings.Repeat("p", 10_000), nil)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("request: %v", err)
+	}
+	_ = resp.Body.Close()
+	h.waitRecorded()
+
+	mu.Lock()
+	defer mu.Unlock()
+	for _, line := range strings.Split(strings.TrimSpace(buf.String()), "\n") {
+		var rec map[string]any
+		if err := json.Unmarshal([]byte(line), &rec); err != nil {
+			t.Fatalf("log line is not JSON: %v", err)
+		}
+		if m, ok := rec["method"].(string); ok && m != "_OTHER" {
+			t.Errorf("method = %.40q…, want _OTHER", m)
+		}
+		if p, ok := rec["path"].(string); ok && len(p) > maxLoggedPathLen+len("…") {
+			t.Errorf("path logged with %d bytes, want at most %d", len(p), maxLoggedPathLen+len("…"))
+		}
+		if len(line) > 2048 {
+			t.Errorf("log line is %d bytes, want it bounded", len(line))
+		}
+	}
+}
+
+type lockedWriter struct {
+	mu *sync.Mutex
+	w  io.Writer
+}
+
+func (l *lockedWriter) Write(p []byte) (int, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.w.Write(p)
 }

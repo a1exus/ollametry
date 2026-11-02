@@ -3,6 +3,7 @@ package proxy
 import (
 	"log/slog"
 	"net/url"
+	"strings"
 	"testing"
 
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
@@ -72,3 +73,26 @@ func TestModelFromPrefix(t *testing.T) {
 
 // An upstream that compresses when asked must not hide usage from the proxy,
 // and the client must still get a body it can read.
+
+func TestLogValuesAreBounded(t *testing.T) {
+	t.Parallel()
+	long := strings.Repeat("a", 10_000)
+	tests := []struct {
+		name, got, want string
+	}{
+		{"known method kept", logMethod("POST"), "POST"},
+		{"unknown method folded", logMethod("PROPFIND"), "_OTHER"},
+		{"long method folded", logMethod(strings.Repeat("X", 10_000)), "_OTHER"},
+		{"short path kept", logPath("/api/chat"), "/api/chat"},
+		{"long path cut", logPath("/" + long), "/" + long[:maxLoggedPathLen-1] + "…"},
+		{"cut never splits a rune", logPath(strings.Repeat("é", maxLoggedPathLen)), strings.Repeat("é", maxLoggedPathLen/2) + "…"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if tt.got != tt.want {
+				t.Errorf("got %q (%d bytes), want %q (%d bytes)", tt.got, len(tt.got), tt.want, len(tt.want))
+			}
+		})
+	}
+}

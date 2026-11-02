@@ -59,3 +59,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 - `golang.org/x/net` v0.59.0 → v0.60.0 (GO-2026-6603, GO-2026-6610, GO-2026-6611, GO-2026-6612, GO-2026-6617).
+- `golang.org/x/net` v0.60.0 → v0.62.0 (GO-2026-6860, GO-2026-6866, in `x/net/html`, which ollametry does not import; flagged by OpenSSF Scorecard). Taken inside the 14-day cooldown as a security fix.
+- Log lines bound client-controlled values: the HTTP method is logged as its semconv name or `_OTHER`, and paths are cut to 256 bytes, so a client cannot inflate each line to the 1 MB header limit. Tests prove that model names and paths cannot forge log lines in either log format (CodeQL `go/log-injection`).
