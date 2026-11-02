@@ -1,6 +1,6 @@
 name: ollametry-e2e
 
-# A throwaway stack for E2E tests (make e2e-hermetic, and CI): Ollama, otel-lgtm
+# A throwaway stack for local E2E tests (make e2e-hermetic): Ollama, otel-lgtm
 # and ollametry built from this checkout, on one private network. Nothing is
 # published to the host; the test runner joins the network. Short poll and
 # export intervals keep the test fast.

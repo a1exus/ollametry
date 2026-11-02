@@ -57,7 +57,7 @@ Verified against Ollama 0.40.13 and `grafana/otel-lgtm:0.39.0` (Prometheus 3.15.
 
 | Workflow | Runs on | Does |
 |---|---|---|
-| `ci.yml` | PRs, pushes to `main` | Matrix legs, each one `make` target: `ci-lint` (tidy-check, lint, vuln, lint-ci, dashboard-check, notices-check), `test-unit`, `cover` (unit + integration). Job `e2e` runs `make e2e-hermetic`. Caches are bind-mounted dirs (`CACHE_GOMOD`, `CACHE_GOBUILD`, `CACHE_GOLANGCI`) kept by `actions/cache`, saved only on pushes to `main`. Multi-arch image build without QEMU and a smoke test without Ollama; dependency review on PRs |
+| `ci.yml` | PRs, pushes to `main` | Matrix legs, each one `make` target: `ci-lint` (tidy-check, lint, vuln, lint-ci, dashboard-check, notices-check), `test-unit`, `cover` (unit + integration). E2E is local only (`make e2e`, `make e2e-hermetic`): it needs a real Ollama and multi-GB images, and the integration tests already cover the assembled binary and OTLP on every PR. Caches are bind-mounted dirs (`CACHE_GOMOD`, `CACHE_GOBUILD`, `CACHE_GOLANGCI`) kept by `actions/cache`, saved only on pushes to `main`. Multi-arch image build without QEMU and a smoke test without Ollama; dependency review on PRs |
 | `fuzz.yml` | nightly, manual | `make fuzz` per target in parallel, 10 min each; failing inputs uploaded. Not a PR gate: PRs replay the corpus via `make test` |
 | `codeql.yml` | PRs, `main`, weekly | CodeQL `security-and-quality` for Go (`GOTOOLCHAIN=auto` for the go.mod version) |
 | `scorecard.yml` | `main`, weekly | OpenSSF Scorecard, published for the README badge |
@@ -72,7 +72,7 @@ make check              # lint, lint-ci, unit + integration tests, vuln (CI runs
 make up && make health  # build, run, verify against the real Ollama
 make smoke MODEL=granite4.2:8b
 make e2e                # E2E against the running stack (after make up)
-make e2e-hermetic       # E2E on a throwaway Ollama + otel-lgtm stack, as CI does
+make e2e-hermetic       # E2E on a throwaway Ollama + otel-lgtm stack (local only)
 make fuzz FUZZTIME=2m   # fuzz framer, decoders, model extraction (nightly in CI)
 make -C ~/opt/grafana dashboards   # provision the dashboard
 ```
