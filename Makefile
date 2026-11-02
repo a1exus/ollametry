@@ -14,6 +14,8 @@ CURL             := curl --silent --show-error --fail --max-time 10
 GO_VERSION       ?= 1.27.3
 GOLANGCI_VERSION ?= v2.15.0
 GOVULN_VERSION   ?= v1.9.0
+ACTIONLINT_VERSION ?= 1.7.12
+ZIZMOR_VERSION   ?= 1.30.1
 VERSION          ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
 # Toolchains run in containers; module and build caches live in named volumes.
@@ -71,8 +73,13 @@ vuln: ## Scan dependencies and stdlib for known vulnerabilities
 tidy: ## Tidy go.mod and go.sum
 	$(GO) mod tidy
 
+.PHONY: lint-ci
+lint-ci: ## Lint GitHub Actions workflows (actionlint, zizmor)
+	docker run --rm -v "$(CURDIR)":/repo -w /repo rhysd/actionlint:$(ACTIONLINT_VERSION) -color
+	docker run --rm -v "$(CURDIR)":/repo:ro -w /repo ghcr.io/zizmorcore/zizmor:$(ZIZMOR_VERSION) --offline .
+
 .PHONY: check
-check: lint test vuln ## Lint, test and scan (run before every commit)
+check: lint lint-ci test vuln ## Lint code and workflows, test and scan (run before every commit)
 
 ##@ Lifecycle
 

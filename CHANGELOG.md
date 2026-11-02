@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tests for the meter provider: histogram buckets (including the `http.server.request.duration` view), resource and `OTEL_SERVICE_NAME`, cardinality limit, Go runtime metrics.
 - `README.md`, `AGENTS.md`, `CLAUDE.md`, `CHANGELOG.md`.
 - MIT license (`LICENSE`), also declared on the image as `org.opencontainers.image.licenses`.
+- GitHub Actions: CI (`make` lint, race tests with coverage, govulncheck, workflow lint, multi-arch image build and smoke test, dependency review), CodeQL, OpenSSF Scorecard, and a tag-triggered release publishing the image to GHCR with SBOM, provenance and attestation. All actions pinned to commit SHAs.
+- `make lint-ci` (actionlint 1.7.12, zizmor 1.30.1), now part of `make check`.
+- Dependabot for Go modules, GitHub Actions and the base image, weekly with a 14-day cooldown.
+- `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), issue forms, pull request template, `CODEOWNERS`, `.editorconfig`; README badges.
 
 ### Security
 

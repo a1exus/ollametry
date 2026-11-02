@@ -1,0 +1,45 @@
+name: Bug report
+description: Something is measured wrong, missing, or the proxy misbehaves
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Do not paste prompts, responses or credentials;
+        security issues go to [private reporting](https://github.com/a1exus/ollametry/security/advisories/new).
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: The request (endpoint, streaming or not, client/SDK) and the metric or behaviour that is wrong.
+      placeholder: |
+        curl http://127.0.0.1:11435/v1/chat/completions -d '{"model":"...","stream":true,...}'
+    validations:
+      required: true
+  - type: input
+    id: ollametry-version
+    attributes:
+      label: ollametry version
+      description: From the `ollametry started` log line or the image tag.
+    validations:
+      required: true
+  - type: input
+    id: ollama-version
+    attributes:
+      label: Ollama version
+      description: "`ollama --version`"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: ollametry log lines around the request (`make logs`). They contain no prompt content.
+      render: json
