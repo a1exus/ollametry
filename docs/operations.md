@@ -37,6 +37,9 @@ binds its ports to `127.0.0.1` only. Logs are JSON, rotated at 3 × 10 MB.
 
 ## Endpoints and health
 
+The admin endpoints are specified in [`api/openapi.yaml`](../api/openapi.yaml)
+(OpenAPI 3.1); a contract test keeps it in step with the handlers.
+
 | Endpoint | URL |
 |---|---|
 | Proxy (use instead of Ollama) | `http://127.0.0.1:11435` |

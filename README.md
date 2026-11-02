@@ -83,6 +83,7 @@ lists every target.
 | [Prometheus exporter](docs/prometheus.md) | Scraping `/metrics`, running without otel-lgtm, how it compares with OTLP, alerting and recording rules |
 | [Configuration](docs/configuration.md) | `OLLAMETRY_*`, `OTEL_*` and Compose variables |
 | [Operations](docs/operations.md) | Compose lifecycle targets, health endpoints, dashboard provisioning, upgrading, troubleshooting |
+| [Admin API reference](api/openapi.yaml) | OpenAPI 3.1 for `/livez`, `/readyz` and `/metrics` on the admin listener |
 | [Development](docs/development.md) | Containerized toolchain, tests, fuzzing, CI |
 | [Releases](docs/releases.md) | Publishing, verifying and running released images |
 

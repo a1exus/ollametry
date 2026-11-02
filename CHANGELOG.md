@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- OpenAPI 3.1 document for the admin listener (`api/openapi.yaml`: `/livez`, `/readyz`, `/metrics`), linted with Spectral (`make openapi-check`, in CI) and checked against the real handlers by `TestHandlerMatchesOpenAPI`.
 - Benchmarks for the framer, decoders and the whole proxy against a plain relay (`make bench`, `make benchstat`); per-request overhead is documented in `docs/development.md#performance`. `TestProxyAllocationsPerRecord` fails if each streamed record allocates more.
 - Dashboard: prompt processing p95 in the Latency row, and a collapsed "ollametry and Ollama" row with the Ollama version, in-flight HTTP requests, and the proxy's goroutines and memory.
 - Prometheus recording and alerting rules (`deploy/prometheus/ollametry-rules.yml`): Ollama down, ollametry absent, server error ratio, slow time to first token, model thrashing, models offloaded to CPU, cardinality overflow. Every alert has a promtool unit test; `make rules-check` runs them, in CI too.
