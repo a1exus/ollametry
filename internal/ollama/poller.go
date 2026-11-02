@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 	"time"
 
@@ -65,14 +66,18 @@ func (p *Poller) Run(ctx context.Context) {
 	}
 }
 
-// Poll takes one snapshot and stores it.
-func (p *Poller) Poll(ctx context.Context) {
-	ctx, cancel := context.WithTimeout(ctx, p.timeout)
+// Poll takes one snapshot and stores it. A poll cut short because parent
+// was canceled stores nothing, so shutdown never reports Ollama as down.
+func (p *Poller) Poll(parent context.Context) {
+	ctx, cancel := context.WithTimeout(parent, p.timeout)
 	defer cancel()
 
 	s := Snapshot{At: p.now()}
 	version, err := p.client.Version(ctx)
 	if err != nil {
+		if parent.Err() != nil {
+			return // shutting down: the failure says nothing about Ollama
+		}
 		p.logChange(ctx, slog.LevelWarn, "ollama unreachable", err)
 		p.store(s)
 		return
@@ -85,6 +90,9 @@ func (p *Poller) Poll(ctx context.Context) {
 	}
 	if s.Installed, err = p.client.Installed(ctx); err != nil {
 		errs = append(errs, err)
+	}
+	if len(errs) > 0 && parent.Err() != nil {
+		return
 	}
 	if len(errs) > 0 {
 		s.Partial = true
@@ -130,6 +138,37 @@ func (p *Poller) Ready() bool {
 	return s.Up && p.now().Sub(s.At) <= 3*p.interval
 }
 
+// KnownModel reports whether name is installed or loaded, comparing names the
+// way Ollama resolves them (case-insensitive, ":latest" when no tag is given).
+// Before the first successful /api/tags it reports true, so a missing
+// inventory never hides real models.
+func (p *Poller) KnownModel(name string) bool {
+	s := p.Snapshot()
+	if s.Installed == nil {
+		return true
+	}
+	want := normalizeModelName(name)
+	for _, m := range s.Installed {
+		if normalizeModelName(m.Name) == want {
+			return true
+		}
+	}
+	for _, m := range s.Running {
+		if normalizeModelName(m.Name) == want {
+			return true
+		}
+	}
+	return false
+}
+
+func normalizeModelName(name string) string {
+	name = strings.ToLower(name)
+	if !strings.Contains(name[strings.LastIndexByte(name, '/')+1:], ":") {
+		name += ":latest"
+	}
+	return name
+}
+
 // RegisterMetrics registers observable gauges fed from the latest snapshot.
 func (p *Poller) RegisterMetrics(meter metric.Meter) (metric.Registration, error) {
 	var errs []error
@@ -140,6 +179,7 @@ func (p *Poller) RegisterMetrics(meter metric.Meter) (metric.Registration, error
 	}
 	var (
 		up            = gauge("ollama.up", "", "Whether the last poll reached Ollama (1) or not (0).")
+		buildInfo     = gauge("ollama.build.info", "", "Always 1 while Ollama is reachable; carries ollama.version.")
 		memSize       = gauge("ollama.model.memory.size", "By", "Memory held by a loaded model.")
 		vramSize      = gauge("ollama.model.memory.vram.size", "By", "Part of a loaded model's memory held in GPU memory.")
 		contextLength = gauge("ollama.model.context_length", "{token}", "Context window a loaded model was started with.")
@@ -160,7 +200,10 @@ func (p *Poller) RegisterMetrics(meter metric.Meter) (metric.Registration, error
 			o.ObserveInt64(up, 0)
 			return nil
 		}
-		o.ObserveInt64(up, 1, metric.WithAttributes(attribute.String("ollama.version", s.Version)))
+		// up has no attributes so that up and down are one series: a version label
+		// would leave the last "up" series lingering in Prometheus after a stop.
+		o.ObserveInt64(up, 1)
+		o.ObserveInt64(buildInfo, 1, metric.WithAttributes(attribute.String("ollama.version", s.Version)))
 
 		now := p.now()
 		for _, m := range s.Running {
@@ -188,7 +231,7 @@ func (p *Poller) RegisterMetrics(meter metric.Meter) (metric.Registration, error
 			o.ObserveInt64(storage, total)
 		}
 		return nil
-	}, up, memSize, vramSize, contextLength, keepAlive, installed, storage)
+	}, up, buildInfo, memSize, vramSize, contextLength, keepAlive, installed, storage)
 	if err != nil {
 		return nil, fmt.Errorf("register ollama gauge callback: %w", err)
 	}

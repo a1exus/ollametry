@@ -91,7 +91,7 @@ only.
 | Metric | Type | What |
 |---|---|---|
 | `gen_ai.client.operation.duration` | histogram, s | Whole inference request at the proxy; `error.type` on failures |
-| `gen_ai.client.token.usage` | histogram, `{token}` | Input and output tokens per request (`gen_ai.token.type`) |
+| `gen_ai.client.token.usage` | histogram, `{token}` | Input and output tokens per request (`gen_ai.token.type`); embeddings have input only |
 | `gen_ai.server.time_to_first_token` | histogram, s | Streamed responses: request to first generated token, reasoning included |
 | `gen_ai.server.time_per_output_token` | histogram, s | Decode time per token, from Ollama's own timing when available |
 | `ollama.prompt.cached_tokens` | counter, `{token}` | Input tokens served from the prompt cache |
@@ -100,7 +100,8 @@ only.
 | `ollama.inference.active` | up-down counter | Inference requests in flight |
 | `http.server.request.duration` | histogram, s | Every proxied request, by `http.route` and status |
 | `http.server.active_requests` | up-down counter | Every proxied request in flight |
-| `ollama.up` | gauge | 1 if the last poll reached Ollama, with `ollama.version` |
+| `ollama.up` | gauge | 1 if the last poll reached Ollama, else 0 |
+| `ollama.build.info` | gauge | 1 while Ollama is reachable, with `ollama.version` |
 | `ollama.model.memory.size`, `ollama.model.memory.vram.size` | gauge, By | Memory per loaded model |
 | `ollama.model.context_length` | gauge, `{token}` | Context a loaded model runs with |
 | `ollama.model.keep_alive.remaining` | gauge, s | Time until an idle model is unloaded; absent when kept forever |
@@ -111,6 +112,12 @@ Shared attributes on `gen_ai.*`: `gen_ai.operation.name` (`chat`,
 `gen_ai.request.model`, `gen_ai.response.model`, `http.route`,
 `server.address`, `server.port`. Go runtime metrics for the proxy itself are
 exported too.
+
+`gen_ai.request.model` is `_OTHER` for a name that is not installed or loaded
+(checked against the last `/api/tags` and `/api/ps` poll, as Ollama resolves
+names: case-insensitive, `:latest` by default) or longer than 256 bytes, so
+typos and probes cannot fill the cardinality limit. The log line keeps the
+name as sent.
 
 `error.type` values: an HTTP status code (`404`, `500`, ...), the API's own
 error type for errors reported inside a 200 response (`stream_error` if it has

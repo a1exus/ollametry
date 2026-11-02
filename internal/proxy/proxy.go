@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -32,6 +33,9 @@ import (
 // names and would only add cardinality.
 const maxModelNameLen = 256
 
+// otherModel replaces model names that are too long or unknown to Ollama.
+const otherModel = "_OTHER"
+
 // Config configures a Proxy.
 type Config struct {
 	// Upstream is Ollama's base URL.
@@ -44,6 +48,10 @@ type Config struct {
 	Logger          *slog.Logger
 	// Transport defaults to NewTransport().
 	Transport http.RoundTripper
+	// KnownModel reports whether a requested model exists; names it rejects
+	// are recorded as "_OTHER" so that typos and probes cannot fill the
+	// cardinality limit. Nil accepts every name.
+	KnownModel func(model string) bool
 }
 
 // Proxy is an http.Handler relaying requests to Ollama.
@@ -51,6 +59,9 @@ type Proxy struct {
 	cfg        Config
 	rp         *httputil.ReverseProxy
 	serverAttr []attribute.KeyValue
+	// inflight counts running handlers so shutdown can wait for their
+	// metrics, which http.Server.Close does not.
+	inflight sync.WaitGroup
 }
 
 // New validates cfg and builds a Proxy.
@@ -102,6 +113,9 @@ func NewTransport() *http.Transport {
 }
 
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	p.inflight.Add(1)
+	defer p.inflight.Done()
+
 	ex := &exchange{
 		start:  time.Now(),
 		method: r.Method,
@@ -123,6 +137,10 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "read request body: "+err.Error())
 			return
 		}
+		ex.loggedModel = model
+		if model != "" && p.cfg.KnownModel != nil && !p.cfg.KnownModel(model) {
+			model = otherModel
+		}
 		ex.requestModel = model
 		inflight := metric.WithAttributes(p.genAIAttrs(ex, "")...)
 		p.cfg.Instruments.InferenceActive.Add(mctx, 1, inflight)
@@ -140,6 +158,23 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	p.rp.ServeHTTP(w, r.WithContext(withExchange(r.Context(), ex)))
+}
+
+// Wait blocks until every handler has recorded its metrics or ctx is done.
+// Call it after the server stopped accepting requests, before flushing the
+// meter provider.
+func (p *Proxy) Wait(ctx context.Context) error {
+	done := make(chan struct{})
+	go func() {
+		p.inflight.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		return fmt.Errorf("wait for in-flight requests: %w", ctx.Err())
+	}
 }
 
 func asError(v any) error {
@@ -164,6 +199,10 @@ func (p *Proxy) modifyResponse(resp *http.Response) error {
 		return nil
 	}
 	ex.status = resp.StatusCode
+	if resp.StatusCode == http.StatusSwitchingProtocols {
+		// ReverseProxy needs the raw, writable body to relay an upgrade.
+		return nil
+	}
 	tap := &tapBody{ReadCloser: resp.Body, ex: ex}
 	if ex.route.Inference() {
 		ex.format = dialect.FormatFromContentType(resp.Header.Get("Content-Type"))
@@ -268,7 +307,7 @@ func modelFromPrefix(prefix []byte) string {
 
 func sanitizeModel(model string) string {
 	if len(model) > maxModelNameLen {
-		return "_OTHER"
+		return otherModel
 	}
 	return model
 }
@@ -311,7 +350,9 @@ func (p *Proxy) finish(ctx context.Context, ex *exchange, clientErr error) {
 	}
 	if errType == "" && r.TokensReported {
 		in.TokenUsage.Record(ctx, r.InputTokens, metric.WithAttributes(withTokenType(base, genai.TokenTypeInput)...))
-		in.TokenUsage.Record(ctx, r.OutputTokens, metric.WithAttributes(withTokenType(base, genai.TokenTypeOutput)...))
+		if ex.route.Operation != genai.OperationEmbeddings {
+			in.TokenUsage.Record(ctx, r.OutputTokens, metric.WithAttributes(withTokenType(base, genai.TokenTypeOutput)...))
+		}
 		if r.CachedInputTokens > 0 {
 			in.CachedInputTokens.Add(ctx, r.CachedInputTokens, metric.WithAttributes(base...))
 		}
@@ -332,7 +373,7 @@ func (p *Proxy) finish(ctx context.Context, ex *exchange, clientErr error) {
 	}
 	p.cfg.Logger.LogAttrs(ctx, level, "inference",
 		slog.String("route", ex.route.Pattern),
-		slog.String("model", ex.requestModel),
+		slog.String("model", ex.loggedModel),
 		slog.Int("status", ex.status),
 		slog.Duration("duration", elapsed),
 		slog.Duration("ttft", ttft),

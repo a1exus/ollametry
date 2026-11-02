@@ -105,7 +105,13 @@ func TestPollerReportsRecordedState(t *testing.T) {
 	if got := value(t, g["ollama.up"], "ollama.up"); got != 1 {
 		t.Errorf("ollama.up = %d, want 1", got)
 	}
-	if v, _ := g["ollama.up"][0].Attributes.Value("ollama.version"); v.AsString() != "0.40.13" {
+	if n := g["ollama.up"][0].Attributes.Len(); n != 0 {
+		t.Errorf("ollama.up has %d attributes, want none", n)
+	}
+	if got := value(t, g["ollama.build.info"], "ollama.build.info"); got != 1 {
+		t.Errorf("ollama.build.info = %d, want 1", got)
+	}
+	if v, _ := g["ollama.build.info"][0].Attributes.Value("ollama.version"); v.AsString() != "0.40.13" {
 		t.Errorf("ollama.version = %q, want 0.40.13", v.AsString())
 	}
 	tests := []struct {
@@ -212,5 +218,80 @@ func TestPollerKeepAliveForeverOmitted(t *testing.T) {
 	})
 	if g := h.gauges(t); len(g["ollama.model.keep_alive.remaining"]) != 0 {
 		t.Errorf("keep_alive.remaining reported for a model kept loaded forever: %v", g["ollama.model.keep_alive.remaining"])
+	}
+}
+
+// Up and down must be the same series, or the last "up" series lingers in
+// Prometheus after Ollama stops (OTLP sends no staleness markers).
+func TestPollerUpAndDownShareSeries(t *testing.T) {
+	t.Parallel()
+	h := newPollerHarness(t)
+	h.poller.Poll(t.Context())
+	up := h.gauges(t)["ollama.up"]
+	h.fake.down.Store(true)
+	h.poller.Poll(t.Context())
+	g := h.gauges(t)
+	down := g["ollama.up"]
+
+	if value(t, up, "ollama.up") != 1 || value(t, down, "ollama.up") != 0 {
+		t.Fatalf("ollama.up went %v -> %v, want 1 -> 0", up, down)
+	}
+	if !up[0].Attributes.Equals(&down[0].Attributes) {
+		t.Errorf("up and down use different attributes: %v vs %v", up[0].Attributes.ToSlice(), down[0].Attributes.ToSlice())
+	}
+	if len(g["ollama.build.info"]) != 0 {
+		t.Errorf("ollama.build.info reported while down: %v", g["ollama.build.info"])
+	}
+}
+
+func TestPollerCanceledPollKeepsLastState(t *testing.T) {
+	t.Parallel()
+	h := newPollerHarness(t)
+	h.poller.Poll(t.Context())
+	want := h.poller.Snapshot()
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	h.poller.Poll(ctx)
+
+	if got := h.poller.Snapshot(); !got.Up || got.Partial || !got.At.Equal(want.At) {
+		t.Errorf("snapshot after a canceled poll = up %v partial %v at %v, want the previous one (up, at %v)",
+			got.Up, got.Partial, got.At, want.At)
+	}
+}
+
+func TestPollerKnownModel(t *testing.T) {
+	t.Parallel()
+	h := newPollerHarness(t)
+	if !h.poller.KnownModel("anything") {
+		t.Error("KnownModel = false before the first poll, want true (inventory unknown)")
+	}
+	h.poller.store(Snapshot{
+		At: h.poller.now(), Up: true,
+		Installed: []InstalledModel{{Name: "granite4.2:8b"}, {Name: "llama3:latest"}, {Name: "hf.co/org/repo:Q4_K_M"}},
+		Running:   []RunningModel{{Name: "loaded-only:1b"}},
+	})
+	tests := []struct {
+		name string
+		want bool
+	}{
+		{"granite4.2:8b", true},
+		{"Granite4.2:8B", true},
+		{"llama3", true},
+		{"llama3:latest", true},
+		{"hf.co/org/repo:q4_k_m", true},
+		{"loaded-only:1b", true},
+		{"granite4.2", false},
+		{"granite4.2:7b", false},
+		{"typo-model", false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := h.poller.KnownModel(tt.name); got != tt.want {
+				t.Errorf("KnownModel(%q) = %v, want %v", tt.name, got, tt.want)
+			}
+		})
 	}
 }

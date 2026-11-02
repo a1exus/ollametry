@@ -40,6 +40,9 @@ Verified against Ollama 0.40.13 and `grafana/otel-lgtm:0.39.0` (Prometheus 3.15.
 - **OTLP → Prometheus names**: `.` → `_`, unit suffixes added (`_seconds`, `_bytes`), counters get `_total`, `{token}`-style units add nothing. A unit of `"1"` adds `_ratio`, which is why `ollama.up` has no unit.
 - **OTLP counters have no start point in Prometheus**: the first export of a series is its baseline, so a model's first request is missing from `rate()`/`increase()`.
 - **Series from a replaced container linger 5 minutes** (no staleness markers for OTLP) with a different `service_version`; dashboard queries aggregate by model name, never `count()` raw series.
+- **Gauges of an unloaded model linger the same 5 minutes** (the SDK stops reporting unobserved series, Prometheus keeps the last sample). Model panels filter with `X and (time() - timestamp(X) < 45)`, three export intervals. For the same reason `ollama.up` has no attributes (up and down are one series) and the version lives on `ollama.build.info`.
+- **`gen_ai.request.model` only names models Ollama has** (`Poller.KnownModel` via `proxy.Config.KnownModel`); others become `_OTHER`. `ollama.inference.active` is cumulative, so every distinct name would hold a series forever.
+- **`http.Server.Close` does not wait for handlers**: shutdown calls `Proxy.Wait` before the final flush, and tests use it (`waitRecorded`) because `finish` records several metrics in turn.
 - **httpconv appends its default options after the caller's**, so bucket overrides must be SDK Views (`telemetry.httpDurationView`).
 - **The dashboard is file-provisioned by `~/opt/grafana`** (`make dashboards` there copies `deploy/grafana/*.json`). Grafana refuses UI and API saves of provisioned dashboards, so edit the JSON here and re-sync.
 - **`govulncheck` below v1.9 panics on Go 1.27** (`unexpected expr: *ast.KeyValueExpr`).

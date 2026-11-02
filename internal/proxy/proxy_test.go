@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -31,16 +32,17 @@ type harness struct {
 	reader       *sdkmetric.ManualReader
 	front        *httptest.Server
 	upstreamHost string
+	proxy        *Proxy
 }
 
-func newHarness(t *testing.T, upstream http.Handler, maxInspect int) *harness {
+func newHarness(t *testing.T, upstream http.Handler, maxInspect int, opts ...func(*Config)) *harness {
 	t.Helper()
 	up := httptest.NewServer(upstream)
 	t.Cleanup(up.Close)
-	return newHarnessFor(t, up.URL, maxInspect)
+	return newHarnessFor(t, up.URL, maxInspect, opts...)
 }
 
-func newHarnessFor(t *testing.T, upstreamURL string, maxInspect int) *harness {
+func newHarnessFor(t *testing.T, upstreamURL string, maxInspect int, opts ...func(*Config)) *harness {
 	t.Helper()
 	reader := sdkmetric.NewManualReader()
 	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
@@ -52,18 +54,22 @@ func newHarnessFor(t *testing.T, upstreamURL string, maxInspect int) *harness {
 	if err != nil {
 		t.Fatalf("parse upstream URL: %v", err)
 	}
-	p, err := New(Config{
+	cfg := Config{
 		Upstream:        u,
 		MaxInspectBytes: maxInspect,
 		Instruments:     in,
 		Logger:          slog.New(slog.DiscardHandler),
-	})
+	}
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+	p, err := New(cfg)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
 	front := httptest.NewServer(p)
 	t.Cleanup(front.Close)
-	return &harness{t: t, reader: reader, front: front, upstreamHost: u.Host}
+	return &harness{t: t, reader: reader, front: front, upstreamHost: u.Host, proxy: p}
 }
 
 func (h *harness) collect() metricdata.ResourceMetrics {
@@ -75,25 +81,17 @@ func (h *harness) collect() metricdata.ResourceMetrics {
 	return rm
 }
 
-// waitRecorded waits until the request has been fully recorded: the proxy
+// waitRecorded waits until every handler has finished recording: the proxy
 // records after the response body is relayed, so the client can be faster.
+// Polling for one metric is not enough, as finish records several in turn.
 func (h *harness) waitRecorded() metricdata.ResourceMetrics {
 	h.t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
-	for {
-		rm := h.collect()
-		var count uint64
-		for _, dp := range histogram[float64](rm, "http.server.request.duration") {
-			count += dp.Count
-		}
-		if count >= 1 {
-			return rm
-		}
-		if time.Now().After(deadline) {
-			h.t.Fatal("timed out waiting for the request to be recorded")
-		}
-		time.Sleep(10 * time.Millisecond)
+	ctx, cancel := context.WithTimeout(h.t.Context(), 5*time.Second)
+	defer cancel()
+	if err := h.proxy.Wait(ctx); err != nil {
+		h.t.Fatalf("waiting for the request to be recorded: %v", err)
 	}
+	return h.collect()
 }
 
 func (h *harness) post(path, body string) (*http.Response, []byte) {
@@ -654,4 +652,141 @@ func TestProxyDecodesCompressedUpstream(t *testing.T) {
 	if output != 12 {
 		t.Errorf("output tokens = %d, want 12 decoded from the compressed response", output)
 	}
+}
+
+func TestProxyFoldsUnknownModels(t *testing.T) {
+	t.Parallel()
+	known := func(model string) bool { return model == testModel }
+	tests := []struct {
+		name, model, want string
+		status            int
+	}{
+		{"installed model kept", testModel, testModel, http.StatusOK},
+		{"unknown model folded", "typo-model", otherModel, http.StatusNotFound},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			h := newHarness(t, replay(tt.status, "application/json; charset=utf-8", []byte(`{"error":"model not found"}`)),
+				1<<20, func(c *Config) { c.KnownModel = known })
+			h.post("/api/chat", `{"model":"`+tt.model+`","messages":[]}`)
+			rm := h.waitRecorded()
+
+			ops := histogram[float64](rm, "gen_ai.client.operation.duration")
+			if len(ops) != 1 {
+				t.Fatalf("operation.duration has %d series, want 1", len(ops))
+			}
+			if got := attr(ops[0].Attributes, "gen_ai.request.model"); got != tt.want {
+				t.Errorf("operation.duration gen_ai.request.model = %q, want %q", got, tt.want)
+			}
+			for _, dp := range sum(rm, "ollama.inference.active") {
+				if got := attr(dp.Attributes, "gen_ai.request.model"); got != tt.want {
+					t.Errorf("inference.active gen_ai.request.model = %q, want %q", got, tt.want)
+				}
+			}
+		})
+	}
+}
+
+func TestProxyEmbeddingsRecordNoOutputTokens(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name, path, body string
+	}{
+		{"native", "/api/embed", `{"model":"m","embeddings":[[0.1]],"prompt_eval_count":3}`},
+		{"openai", "/v1/embeddings", `{"object":"list","data":[{"embedding":[0.1]}],"model":"m","usage":{"prompt_tokens":3,"total_tokens":3}}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			h := newHarness(t, replay(http.StatusOK, "application/json", []byte(tt.body)), 1<<20)
+			h.post(tt.path, `{"model":"m","input":"hi"}`)
+			rm := h.waitRecorded()
+
+			types := map[string]int64{}
+			for _, dp := range histogram[int64](rm, "gen_ai.client.token.usage") {
+				types[attr(dp.Attributes, "gen_ai.token.type")] += dp.Sum
+			}
+			if len(types) != 1 || types["input"] != 3 {
+				t.Errorf("token usage by type = %v, want only input = 3", types)
+			}
+		})
+	}
+}
+
+func TestProxyRelaysProtocolUpgrade(t *testing.T) {
+	t.Parallel()
+	upstream := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, rw, err := http.NewResponseController(w).Hijack()
+		if err != nil {
+			t.Errorf("hijack: %v", err)
+			return
+		}
+		defer conn.Close()
+		_, _ = rw.WriteString("HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: test\r\n\r\n")
+		_ = rw.Flush()
+	})
+	h := newHarness(t, upstream, 1<<20)
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, h.front.URL+"/upgrade", nil)
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	req.Header.Set("Connection", "Upgrade")
+	req.Header.Set("Upgrade", "test")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("GET: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusSwitchingProtocols {
+		t.Errorf("status = %d, want 101", resp.StatusCode)
+	}
+}
+
+func TestProxyWaitBlocksUntilHandlersRecord(t *testing.T) {
+	t.Parallel()
+	release := make(chan struct{})
+	var releaseOnce sync.Once
+	unblock := func() { releaseOnce.Do(func() { close(release) }) }
+	// Release the upstream even when the test fails, or closing the test
+	// servers would hang.
+	defer unblock()
+	upstream := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		<-release
+		w.WriteHeader(http.StatusOK)
+	})
+	h := newHarness(t, upstream, 1<<20)
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, h.front.URL+"/api/tags", nil)
+		if resp, err := http.DefaultClient.Do(req); err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
+	// Wait for the handler to be running.
+	deadline := time.Now().Add(5 * time.Second)
+	for len(sum(h.collect(), "http.server.active_requests")) == 0 || sum(h.collect(), "http.server.active_requests")[0].Value == 0 {
+		if time.Now().After(deadline) {
+			t.Fatal("request never reached the proxy")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
+	defer cancel()
+	if err := h.proxy.Wait(ctx); err == nil {
+		t.Fatal("Wait returned nil while a handler was running")
+	}
+
+	unblock()
+	if err := h.proxy.Wait(t.Context()); err != nil {
+		t.Fatalf("Wait after the handler finished: %v", err)
+	}
+	if len(histogram[float64](h.collect(), "http.server.request.duration")) == 0 {
+		t.Error("Wait returned before the request was recorded")
+	}
+	<-done
 }

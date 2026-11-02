@@ -23,10 +23,13 @@ const (
 // request's own goroutine: ReverseProxy calls Rewrite, ModifyResponse,
 // ErrorHandler and reads the response body there.
 type exchange struct {
-	start        time.Time
-	method       string
-	route        route.Route
+	start  time.Time
+	method string
+	route  route.Route
+	// requestModel is gen_ai.request.model; loggedModel is what the client
+	// sent, which differs when the name is unknown to Ollama.
 	requestModel string
+	loggedModel  string
 
 	status       int
 	format       dialect.Format

@@ -449,7 +449,7 @@
         {
           "refId": "A",
           "instant": true,
-          "expr": "count(count by (ollama_model_name) (ollama_model_memory_size_bytes)) or vector(0)"
+          "expr": "count(count by (ollama_model_name) (ollama_model_memory_size_bytes and (time() - timestamp(ollama_model_memory_size_bytes) < 45))) or vector(0)"
         }
       ],
       "fieldConfig": {
@@ -956,25 +956,25 @@
           "refId": "A",
           "instant": true,
           "format": "table",
-          "expr": "max by (ollama_model_name, ollama_model_family, ollama_model_parameter_size, ollama_model_quantization, ollama_model_runner) (ollama_model_memory_size_bytes)"
+          "expr": "max by (ollama_model_name, ollama_model_family, ollama_model_parameter_size, ollama_model_quantization, ollama_model_runner) (ollama_model_memory_size_bytes and (time() - timestamp(ollama_model_memory_size_bytes) < 45))"
         },
         {
           "refId": "B",
           "instant": true,
           "format": "table",
-          "expr": "max by (ollama_model_name) (ollama_model_memory_vram_size_bytes)"
+          "expr": "max by (ollama_model_name) (ollama_model_memory_vram_size_bytes and (time() - timestamp(ollama_model_memory_vram_size_bytes) < 45))"
         },
         {
           "refId": "C",
           "instant": true,
           "format": "table",
-          "expr": "max by (ollama_model_name) (ollama_model_context_length)"
+          "expr": "max by (ollama_model_name) (ollama_model_context_length and (time() - timestamp(ollama_model_context_length) < 45))"
         },
         {
           "refId": "D",
           "instant": true,
           "format": "table",
-          "expr": "max by (ollama_model_name) (ollama_model_keep_alive_remaining_seconds)"
+          "expr": "max by (ollama_model_name) (ollama_model_keep_alive_remaining_seconds and (time() - timestamp(ollama_model_keep_alive_remaining_seconds) < 45))"
         }
       ],
       "transformations": [
@@ -1106,7 +1106,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "max by (ollama_model_name) (ollama_model_memory_size_bytes)",
+          "expr": "max by (ollama_model_name) (ollama_model_memory_size_bytes and (time() - timestamp(ollama_model_memory_size_bytes) < 45))",
           "legendFormat": "{{ollama_model_name}}"
         }
       ],
