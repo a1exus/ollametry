@@ -20,6 +20,7 @@ ACTIONLINT_VERSION ?= 1.7.12
 ZIZMOR_VERSION   ?= 1.30.1
 JQ_VERSION       ?= 1.8.1
 PROMETHEUS_VERSION ?= v3.15.1
+SPECTRAL_VERSION ?= 6.17.0
 GOLICENSES_VERSION ?= v2.0.1
 BENCHSTAT_VERSION  ?= v0.0.0-20251208221838-04cf7a2dca90
 BENCH_COUNT        ?= 6
@@ -137,6 +138,11 @@ rules-check: ## Validate and unit-test the Prometheus rules (promtool)
 	docker run --rm -v "$(CURDIR)/deploy/prometheus":/rules:ro -w /rules --entrypoint promtool \
 		prom/prometheus:$(PROMETHEUS_VERSION) test rules ollametry-rules.test.yml
 
+.PHONY: openapi-check
+openapi-check: ## Lint api/openapi.yaml with Spectral (the contract test checks it against the handlers)
+	docker run --rm --platform linux/amd64 -v "$(CURDIR)/api":/api:ro -w /api stoplight/spectral:$(SPECTRAL_VERSION) \
+		lint --ruleset .spectral.yaml --fail-severity hint openapi.yaml
+
 .PHONY: dashboard-check
 dashboard-check: ## Validate the Grafana dashboard JSON
 	@for f in deploy/grafana/*.json; do \
@@ -178,10 +184,10 @@ versions-check: ## Fail if go.mod, the Makefile and the Dockerfile name differen
 	fi; echo "Go $(GO_VERSION) everywhere"
 
 .PHONY: ci-lint
-ci-lint: tidy-check versions-check lint vuln lint-ci dashboard-check rules-check notices-check ## CI lint leg: tidy, versions, lint, vuln, workflows, dashboard, rules, notices
+ci-lint: tidy-check versions-check lint vuln lint-ci openapi-check dashboard-check rules-check notices-check ## CI lint leg: tidy, versions, lint, vuln, workflows, OpenAPI, dashboard, rules, notices
 
 .PHONY: check
-check: lint lint-ci dashboard-check rules-check test vuln ## Lint code, workflows and dashboard, test and scan (run before every commit)
+check: lint lint-ci openapi-check dashboard-check rules-check test vuln ## Lint code, workflows and dashboard, test and scan (run before every commit)
 
 ##@ Lifecycle (docker compose)
 

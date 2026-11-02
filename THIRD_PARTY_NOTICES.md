@@ -128,6 +128,7 @@ ollametry.
 | [zizmor](https://github.com/zizmorcore/zizmor) | [MIT](https://github.com/zizmorcore/zizmor/blob/main/LICENSE) | Workflow security analysis |
 | [jq](https://github.com/jqlang/jq) | [MIT](https://github.com/jqlang/jq/blob/master/COPYING) (documentation CC BY 3.0) | Dashboard validation |
 | [promtool](https://github.com/prometheus/prometheus) (`prom/prometheus` image) | [Apache-2.0](https://github.com/prometheus/prometheus/blob/main/LICENSE) | Validating and unit-testing the Prometheus rules |
+| [Spectral](https://github.com/stoplightio/spectral) (`stoplight/spectral` image) | [Apache-2.0](https://github.com/stoplightio/spectral/blob/develop/LICENSE) | Linting the OpenAPI document |
 | [Docker Compose](https://github.com/docker/compose) | [Apache-2.0](https://github.com/docker/compose/blob/main/LICENSE) | Running the service |
 
 ### GitHub Actions

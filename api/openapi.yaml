@@ -1,0 +1,122 @@
+openapi: 3.1.0
+info:
+  title: ollametry admin API
+  version: 1.0.0
+  summary: Health and metrics endpoints of ollametry.
+  description: |
+    ollametry serves two listeners. The proxy listener (`:11435`) relays
+    Ollama's own API unchanged and is described by Ollama's documentation,
+    not here. This document covers the admin listener (`:11436`), which
+    belongs to ollametry and can never shadow an Ollama route.
+
+    Every operation also answers `HEAD`. Other methods get `405` with an
+    `Allow` header; unknown paths get `404`. The listener has no
+    authentication and binds to loopback by default.
+  license:
+    name: MIT
+    identifier: MIT
+  contact:
+    name: ollametry
+    url: https://github.com/a1exus/ollametry
+externalDocs:
+  description: Operations guide
+  url: https://github.com/a1exus/ollametry/blob/main/docs/operations.md
+servers:
+  - url: http://127.0.0.1:11436
+    description: Default admin listener (OLLAMETRY_ADMIN_ADDR)
+tags:
+  - name: health
+    description: Liveness and readiness probes.
+  - name: metrics
+    description: Prometheus exposition.
+security: []
+
+paths:
+  /livez:
+    get:
+      operationId: getLivez
+      tags: [health]
+      summary: Liveness
+      description: 200 while the process serves requests. Container health checks use it.
+      responses:
+        "200":
+          $ref: "#/components/responses/Ok"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+
+  /readyz:
+    get:
+      operationId: getReadyz
+      tags: [health]
+      summary: Readiness
+      description: |
+        200 when the last poll reached Ollama within three poll intervals and
+        ollametry is not shutting down; 503 otherwise.
+      responses:
+        "200":
+          $ref: "#/components/responses/Ok"
+        "503":
+          description: Ollama unreachable or stale, or shutting down.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoStore"
+          content:
+            text/plain:
+              schema:
+                type: string
+                const: "not ready\n"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+
+  /metrics:
+    get:
+      operationId: getMetrics
+      tags: [metrics]
+      summary: Prometheus metrics
+      description: |
+        Every metric ollametry records, in the Prometheus text format, with
+        Go runtime metrics and `target_info`. Served when
+        `OLLAMETRY_PROMETHEUS` is true (the default); 404 when it is off.
+        See https://github.com/a1exus/ollametry/blob/main/docs/prometheus.md.
+      responses:
+        "200":
+          description: Prometheus text exposition.
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: |
+                # HELP ollama_up Whether the last poll reached Ollama (1) or not (0).
+                # TYPE ollama_up gauge
+                ollama_up 1
+        "404":
+          description: The endpoint is turned off (`OLLAMETRY_PROMETHEUS=false`).
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+
+components:
+  headers:
+    NoStore:
+      description: Probe results must not be cached.
+      schema:
+        type: string
+        const: no-store
+  responses:
+    Ok:
+      description: Healthy.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/NoStore"
+      content:
+        text/plain:
+          schema:
+            type: string
+            const: "ok\n"
+    MethodNotAllowed:
+      description: Only GET and HEAD are allowed.
+      headers:
+        Allow:
+          description: The allowed methods.
+          schema:
+            type: string
+            example: GET, HEAD
