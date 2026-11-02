@@ -129,6 +129,13 @@ lint-ci: ## Lint GitHub Actions workflows (actionlint, zizmor)
 	docker run --rm -v "$(CURDIR)":/repo -w /repo rhysd/actionlint:$(ACTIONLINT_VERSION) -color
 	docker run --rm -v "$(CURDIR)":/repo:ro -w /repo ghcr.io/zizmorcore/zizmor:$(ZIZMOR_VERSION) --offline .
 
+DIST_PLATFORMS ?= darwin/arm64 darwin/amd64 linux/arm64 linux/amd64
+
+.PHONY: dist
+dist: ## Build reproducible release archives and SHA256SUMS into dist/ (VERSION=vX.Y.Z)
+	$(DOCKER_RUN) -e VERSION='$(VERSION)' -e PLATFORMS='$(DIST_PLATFORMS)' \
+		-e SOURCE_DATE_EPOCH="$$(git log -1 --format=%ct)" golang:$(GO_VERSION) sh tools/dist.sh
+
 .PHONY: notices
 notices: ## Regenerate the Go module table in THIRD_PARTY_NOTICES.md (go-licenses)
 	$(DOCKER_RUN) -e GOOS=linux golang:$(GO_VERSION) \
