@@ -44,11 +44,11 @@ responses pass through byte for byte, streaming included.
 ## Platforms
 
 ollametry runs in a container (`linux/amd64`, `linux/arm64`) next to Ollama on
-the host, on any OS with a container runtime:
+the host, with Docker Compose (`make up`) on any OS:
 
-| OS | Container runtime | Ollama |
+| OS | Docker | Ollama |
 | --- | --- | --- |
-| macOS | [Docker Desktop, Apple `container`](docs/containers.md) | On the host |
+| macOS | [Docker Desktop](docs/containers.md#macos-docker-desktop) | On the host |
 | Linux | [Docker Engine](docs/containers.md#linux-docker-engine) | On the host; on native Linux (not a VM) also in a container with an NVIDIA or AMD GPU |
 | Windows | [WSL 2](docs/containers.md#windows-wsl-2) with Docker Desktop or Docker Engine | On the host |
 
@@ -60,8 +60,8 @@ containers run inside a VM, away from the GPU
 
 This repository's setup runs ollametry with Docker Compose next to the
 `~/opt/grafana` stack (Docker Compose v2.24+, `make`, `curl`, `bash`; on
-Windows, from WSL 2). To run the published image instead, see
-[install](docs/install.md#from-the-published-image).
+Windows, from WSL 2). To run a published image instead of building one, see
+[install](docs/install.md#using-a-published-image).
 
 ```sh
 make up                               # docker compose up -d --build, wait until healthy
@@ -94,8 +94,8 @@ setup the dashboard is at `https://grafana.localhost/d/ollametry` (folder
 
 | Guide | Covers |
 | --- | --- |
-| [Install](docs/install.md) | Running the container: this repository's Compose setup or the published image, and verifying it |
-| [Container environments](docs/containers.md) | Linux Docker Engine, macOS Docker Desktop or Apple `container`, Windows WSL 2; GPU access and where Ollama should run; NVIDIA GPUs |
+| [Install](docs/install.md) | Running with Docker Compose: building from source or using a published image, and verifying it |
+| [Container environments](docs/containers.md) | Docker on Linux, macOS and Windows (WSL 2); GPU access and where Ollama should run; NVIDIA GPUs |
 | [Clients](docs/clients.md) | Pointing the Ollama CLI and OpenAI/Anthropic SDKs at the proxy; measuring every client |
 | [Metrics](docs/metrics.md) | Every metric and attribute, `error.type`, limits, writing PromQL against OTLP series |
 | [Prometheus exporter](docs/prometheus.md) | Scraping `/metrics`, running without otel-lgtm, how it compares with OTLP, alerting and recording rules |

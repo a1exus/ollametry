@@ -23,13 +23,18 @@ started, `docker compose exec ollametry ollametry -help`.
 ## Setting variables
 
 Every `OLLAMETRY_*` variable also has a flag (`ollametry -help`), and flags
-win. In the container, set them as environment variables:
+win. `compose.yaml` passes `OLLAMETRY_POLL_INTERVAL`, `OLLAMETRY_LOG_LEVEL`,
+`OLLAMETRY_PROMETHEUS`, `OTEL_EXPORTER_OTLP_ENDPOINT`,
+`OTEL_METRIC_EXPORT_INTERVAL`, `OTEL_RESOURCE_ATTRIBUTES` and the
+[Compose variables](#compose) through from the shell or a `.env` file next to
+it. Set any other variable under `environment:` in a `compose.override.yaml`:
 
-| Runs as | Where |
-| --- | --- |
-| Docker Compose | the shell or a `.env` file next to `compose.yaml` (see [Compose](#compose)) |
-| `docker run` | `-e OLLAMETRY_LOG_LEVEL=debug` |
-| Apple `container` | `-e OLLAMETRY_LOG_LEVEL=debug` on `container run` |
+```yaml
+services:
+  ollametry:
+    environment:
+      OLLAMETRY_CARDINALITY_LIMIT: "5000"
+```
 
 ## OpenTelemetry exporter
 

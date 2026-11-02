@@ -67,8 +67,7 @@ services:
 ```
 
 Start it with `docker compose up -d --build` (`make up` checks for the Grafana
-network first), or run the [published image](install.md#from-the-published-image)
-with `-e OTEL_METRICS_EXPORTER=none`.
+network first).
 
 ## Same series as OTLP
 

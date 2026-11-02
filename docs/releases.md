@@ -36,20 +36,7 @@ ollametry ships only as this image; there are no separate binaries.
 gh attestation verify oci://ghcr.io/a1exus/ollametry:X.Y.Z -R a1exus/ollametry
 ```
 
-Running the image is covered in [install](install.md).
-
 ## Using a released image
 
-To run a published image instead of building one, add a
-`compose.override.yaml` next to `compose.yaml` (Compose reads it
-automatically; `!reset` needs Compose 2.24 or newer):
-
-```yaml
-services:
-  ollametry:
-    build: !reset null
-    image: ghcr.io/a1exus/ollametry:X.Y.Z
-    pull_policy: missing
-```
-
-`make up` then pulls the image instead of building it.
+Running a published image with this repository's Compose setup is covered in
+[install](install.md#using-a-published-image).

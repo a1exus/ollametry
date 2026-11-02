@@ -6,17 +6,18 @@
 - [What the container needs](#what-the-container-needs)
 - [Linux: Docker Engine](#linux-docker-engine)
 - [macOS: Docker Desktop](#macos-docker-desktop)
-- [macOS: Apple container](#macos-apple-container)
 - [macOS: installing with Homebrew](#macos-installing-with-homebrew)
 - [Windows: WSL 2](#windows-wsl-2)
 - [NVIDIA GPUs on native Linux](#nvidia-gpus-on-native-linux)
 
-| OS | Runtime | Compose and `make up` | Status |
-| --- | --- | --- | --- |
-| Linux | [Docker Engine](https://docs.docker.com/engine/install/) | Yes, with one override | Image build and smoke test run on Docker Engine in CI |
-| macOS | Docker Desktop | Yes, as is | Verified: the project is developed and E2E-tested here |
-| macOS | [Apple `container`](https://github.com/apple/container) | No Compose; `container run` | Not tested by this project |
-| Windows | [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/tutorials/wsl-containers) with Docker Desktop or Docker Engine | Yes | Not tested by this project |
+ollametry runs with Docker Compose (`make up`), so every platform needs Docker
+with Compose v2.24 or newer:
+
+| OS | Docker | Status |
+| --- | --- | --- |
+| Linux | [Docker Engine](https://docs.docker.com/engine/install/) with the Compose plugin, plus one override | Image build and smoke test run on Docker Engine in CI |
+| macOS | Docker Desktop, as is | Verified: the project is developed and E2E-tested here |
+| Windows | [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/tutorials/wsl-containers) with Docker Desktop or Docker Engine | Not tested by this project |
 
 ## Where Ollama runs: GPU access
 
@@ -29,7 +30,7 @@ virtual machine), where Ollama may also run in a container with the GPU.**
 
 | Host | Where Ollama runs | Why |
 | --- | --- | --- |
-| macOS | On the host: the Ollama app or Homebrew | Containers run in a Linux VM without GPU passthrough: "GPU acceleration is not available for Docker Desktop in macOS due to the lack of GPU passthrough and emulation" ([Ollama FAQ](https://docs.ollama.com/faq#how-do-i-use-ollama-with-gpu-acceleration-in-docker)). Apple `container` documents no GPU access either |
+| macOS | On the host: the Ollama app or Homebrew | Containers run in a Linux VM without GPU passthrough: "GPU acceleration is not available for Docker Desktop in macOS due to the lack of GPU passthrough and emulation" ([Ollama FAQ](https://docs.ollama.com/faq#how-do-i-use-ollama-with-gpu-acceleration-in-docker)). |
 | Windows | On the host: the Ollama app | Docker Desktop and Docker Engine on Windows run containers inside the WSL 2 virtual machine, like macOS. Docker Desktop can pass an NVIDIA GPU into it ([Docker GPU support](https://docs.docker.com/desktop/features/gpu/)), but the project keeps Ollama on the host, with direct access to the GPU and its drivers, on every OS that puts containers in a VM |
 | Linux, native | On the host, or in a container with the GPU: NVIDIA through the [NVIDIA Container Toolkit](#nvidia-gpus-on-native-linux), AMD through the `ollama/ollama:rocm` image ([Ollama Docker docs](https://docs.ollama.com/docker)) | Containers share the host's kernel and GPU drivers; no VM in between |
 | Linux in a VM, including WSL 2 distributions | On the machine that has the GPU | Same reason as macOS and Windows |
@@ -45,8 +46,8 @@ container, not the host. Each runtime bridges that differently:
 | Loopback (default) | `localhost`, any `*.localhost`, `*.local` or `*.internal` name, loopback or private IPs, the machine's own addresses |
 | Any other address (`OLLAMA_HOST=0.0.0.0`) | Anything |
 
-ollametry sends the upstream URL's host, so `host.docker.internal` and
-`host.container.internal` pass the check. If you make Ollama listen on all
+ollametry sends the upstream URL's host, so `host.docker.internal` passes the
+check. If you make Ollama listen on all
 interfaces, it is reachable from your network too, and it has no
 authentication: restrict it with a firewall.
 
@@ -90,47 +91,6 @@ The default: `make up` works as is. Docker Desktop resolves
 `host.docker.internal` to the Mac and forwards to its loopback, where the
 Ollama app listens. See [operations](operations.md#running-with-docker-compose).
 
-## macOS: Apple container
-
-Apple's [`container`](https://github.com/apple/container) runs Linux
-containers in lightweight VMs on Apple silicon. Install it with Homebrew
-(`brew install container`). Run only ollametry in it: Ollama belongs on the
-host, [with the GPU](#where-ollama-runs-gpu-access). It has no Compose
-and no `host.docker.internal`, so run ollametry with `container run`. This project
-does not test it; the commands follow Apple's
-[host integration](https://github.com/apple/container/blob/main/docs/host-integration.md)
-and [networking](https://github.com/apple/container/blob/main/docs/networking.md)
-guides.
-
-1. Start the service and give the Mac a name containers can reach. The IP is
-   any unused address (here from the 203.0.113.0/24 documentation range); the
-   name ends in `.internal`, which Ollama accepts:
-
-   ```sh
-   container system start
-   sudo container system dns create host.container.internal --localhost 203.0.113.113
-   ```
-
-   The packet filter rule behind this is removed on restart; run the `dns
-   create` command again after rebooting. Creating it turns off iCloud
-   Private Relay.
-
-2. Run a [released image](install.md#from-the-published-image):
-
-   ```sh
-   container run -d --name ollametry \
-     -p 127.0.0.1:11435:11435 -p 127.0.0.1:11436:11436 \
-     -e OLLAMETRY_OLLAMA_URL=http://host.container.internal:11434 \
-     -e OTEL_METRICS_EXPORTER=none \
-     ghcr.io/a1exus/ollametry:X.Y.Z
-   curl -s http://127.0.0.1:11436/readyz
-   ```
-
-   To push OTLP to otel-lgtm running under Docker Desktop, replace
-   `OTEL_METRICS_EXPORTER=none` with
-   `OTEL_EXPORTER_OTLP_ENDPOINT=http://host.container.internal:4318`: the
-   two runtimes share no network, only the Mac's published ports.
-
 ## macOS: installing with Homebrew
 
 Everything on the Mac side installs with [Homebrew](https://brew.sh):
@@ -138,7 +98,6 @@ Everything on the Mac side installs with [Homebrew](https://brew.sh):
 ```sh
 brew install --cask ollama-app       # the Ollama app (menu bar), as used here
 brew install --cask docker-desktop   # Docker Desktop, for make up and the toolchain
-brew install container               # Apple container (optional)
 ```
 
 To run Ollama as a background service without the app, use the formula
