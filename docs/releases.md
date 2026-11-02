@@ -15,18 +15,26 @@
 
 The release workflow then:
 
+- builds reproducible binary archives for macOS and Linux (`arm64`,
+  `amd64`) with `make dist`, the same pinned Go image and flags as the
+  container image, and attests them;
 - builds `ghcr.io/a1exus/ollametry` for `linux/amd64` and `linux/arm64`,
   tagged `X.Y.Z`, `X.Y`, `X` (from 1.0) and `latest`, with an SBOM and build
   provenance;
 - attests the image with GitHub artifact attestations;
-- creates the GitHub release from that version's `CHANGELOG.md` section, and
-  fails if the section is missing.
+- creates the GitHub release from that version's `CHANGELOG.md` section,
+  attaching the archives and `SHA256SUMS`; it fails if the section is missing.
 
-## Verifying an image
+## Verifying
 
 ```sh
 gh attestation verify oci://ghcr.io/a1exus/ollametry:X.Y.Z -R a1exus/ollametry
+gh attestation verify ollametry_X.Y.Z_darwin_arm64.tar.gz -R a1exus/ollametry
 ```
+
+To check reproducibility, run `make dist VERSION=vX.Y.Z` on the tagged commit
+and compare `dist/SHA256SUMS` with the release's. Installing is covered in
+[install](install.md).
 
 ## Using a released image
 

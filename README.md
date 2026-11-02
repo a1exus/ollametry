@@ -57,6 +57,9 @@ make smoke MODEL=granite4.2:8b        # one request through the proxy
 make -C ~/opt/grafana dashboards      # provision the dashboard into Grafana
 ```
 
+Without Docker, run a [release binary](docs/install.md) as a macOS launchd
+service next to the Ollama app.
+
 Then point clients at `http://127.0.0.1:11435` instead of `:11434`:
 
 ```sh
@@ -74,6 +77,7 @@ lists every target.
 
 | Guide | Covers |
 |---|---|
+| [Install](docs/install.md) | Binaries for macOS and Linux, a launchd service, the container image, `go install` |
 | [Clients](docs/clients.md) | Pointing the Ollama CLI and OpenAI/Anthropic SDKs at the proxy; measuring every client |
 | [Metrics](docs/metrics.md) | Every metric and attribute, `error.type`, limits, writing PromQL against OTLP series |
 | [Prometheus exporter](docs/prometheus.md) | Scraping `/metrics`, running without otel-lgtm, how it compares with OTLP, alerting and recording rules |
