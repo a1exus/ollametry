@@ -24,7 +24,7 @@ ollametry is a Go reverse proxy in front of a host-installed Ollama (macOS app, 
 | `deploy/prometheus` | Recording and alerting rules with promtool unit tests (`make rules-check`, in CI). Cold loads are load-duration observations above the `le="1"` bucket: warm requests report milliseconds |
 | `deploy/launchd` | macOS launchd agent for the native binary; shipped in darwin archives |
 | `tools/dist.sh` | `make dist`: reproducible release archives (sorted tar, fixed mtime from the last commit, `gzip -n`) built in the pinned golang image |
-| `docs/` | User docs: install, clients, metrics, prometheus, configuration, operations, development, releases. README is an overview with links |
+| `docs/` | User docs: install, containers, clients, metrics, prometheus, configuration, operations, development, releases. README is an overview with links |
 | `test/e2e` | E2E tests (`//go:build e2e`) and their throwaway stack `compose.yaml`. Integration tests are `*_integration_test.go` with `//go:build integration`; golangci-lint builds both tags |
 | `THIRD_PARTY_NOTICES.md`, `tools/notices.awk` | Third-party attribution. The Go module table between the `go-licenses` markers is generated (`make notices`, checked in CI by `notices-check`); the other sections are hand-written |
 
