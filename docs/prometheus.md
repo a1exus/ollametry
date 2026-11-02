@@ -67,11 +67,8 @@ services:
 ```
 
 Start it with `docker compose up -d --build` (`make up` checks for the Grafana
-network first). Outside Docker, the binary alone does the same:
-
-```sh
-OTEL_METRICS_EXPORTER=none ollametry -ollama-url http://127.0.0.1:11434
-```
+network first), or run the [published image](install.md#from-the-published-image)
+with `-e OTEL_METRICS_EXPORTER=none`.
 
 ## Same series as OTLP
 

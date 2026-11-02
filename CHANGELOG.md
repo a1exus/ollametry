@@ -60,23 +60,19 @@ The first release.
   thrashing, models offloaded to CPU, cardinality overflow.
 - Log lines in JSON or text, with client-controlled values bounded in size.
 
-#### Platforms and distribution
+#### Distribution
 
-- Binaries for macOS, Linux (`.tar.gz`) and Windows (`.zip`), each for
-  `arm64` and `amd64`: reproducible archives with `SHA256SUMS` and signed build
-  provenance.
 - Multi-arch container image on `ghcr.io/a1exus/ollametry`: distroless,
   non-root, with SBOM, provenance and the license notices in
   `/usr/share/doc/ollametry/`.
-- Service setups: a launchd agent for macOS, a hardened systemd unit for
-  Linux, and Task Scheduler steps for Windows.
 - Docker Compose setup with `make` lifecycle targets (`up`, `down`, `logs`,
-  `health`, ...), and guidance per OS and container runtime, including GPU
-  access and NVIDIA containers.
+  `health`, ...), and guidance for running the container on macOS, Linux and
+  Windows, including why Ollama stays on the host where containers get no GPU.
+- `ollametry` runs only in this container; there are no separate binaries.
 
 #### Quality and supply chain
 
-- Unit and integration tests on Linux, macOS and Windows in CI; end-to-end
+- Unit and integration tests in CI; end-to-end
   tests against a real Ollama and otel-lgtm, run locally; nightly fuzzing of
   the parsers; benchmarks with a guard on allocations per streamed record.
 - Static analysis on every pull request: golangci-lint (with gosec), CodeQL,

@@ -63,7 +63,6 @@ Then put ollametry on 11434:
 | ollametry runs as | Setting |
 | --- | --- |
 | Docker Compose | `PROXY_PORT=11434 OLLAMA_UPSTREAM=http://host.docker.internal:11433 make up` |
-| Binary | `ollametry -listen 127.0.0.1:11434 -ollama-url http://127.0.0.1:11433` |
-| launchd, systemd, Task Scheduler | the same two settings as `OLLAMETRY_LISTEN_ADDR` and `OLLAMETRY_OLLAMA_URL` ([install](install.md)) |
+| `docker run` | publish `-p 127.0.0.1:11434:11435` and set `-e OLLAMETRY_OLLAMA_URL=http://host.docker.internal:11433` ([install](install.md#from-the-published-image)) |
 
 Clients that use Ollama's default address now go through ollametry.

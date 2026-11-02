@@ -18,9 +18,6 @@
 | macOS | [Apple `container`](https://github.com/apple/container) | No Compose; `container run` | Not tested by this project |
 | Windows | [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/tutorials/wsl-containers) with Docker Desktop or Docker Engine | Yes | Not tested by this project |
 
-On a Mac, the [native binary as a launchd service](install.md#macos-service-launchd)
-needs no container runtime at all.
-
 ## Where Ollama should run: GPU access
 
 ollametry itself needs no GPU and runs anywhere. Ollama does: without one it
@@ -92,9 +89,6 @@ exist unless mapped to `host-gateway`, the Docker bridge address (usually
 
 3. `make up && make health`.
 
-Without Docker, run the [Linux binary](install.md#binary) directly; it reaches
-Ollama on `127.0.0.1` with no changes.
-
 ## macOS: Docker Desktop
 
 The default: `make up` works as is. Docker Desktop resolves
@@ -126,7 +120,7 @@ guides.
    create` command again after rebooting. Creating it turns off iCloud
    Private Relay.
 
-2. Run a [released image](install.md#container-image):
+2. Run a [released image](install.md#from-the-published-image):
 
    ```sh
    container run -d --name ollametry \
