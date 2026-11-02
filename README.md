@@ -1,5 +1,11 @@
 # ollametry
 
+[![CI](https://github.com/a1exus/ollametry/actions/workflows/ci.yml/badge.svg)](https://github.com/a1exus/ollametry/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/a1exus/ollametry/actions/workflows/codeql.yml/badge.svg)](https://github.com/a1exus/ollametry/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/a1exus/ollametry/badge)](https://scorecard.dev/viewer/?uri=github.com/a1exus/ollametry)
+[![Go](https://img.shields.io/github/go-mod/go-version/a1exus/ollametry)](go.mod)
+[![License: MIT](https://img.shields.io/github/license/a1exus/ollametry)](LICENSE)
+
 A transparent reverse proxy for [Ollama](https://ollama.com) that exports
 OpenTelemetry metrics: token usage, latency, time to first token and decode
 speed per model, error rates, and the models Ollama holds in memory. Metrics
@@ -23,6 +29,7 @@ responses pass through byte for byte, streaming included.
 
 Docs: [`AGENTS.md`](AGENTS.md) (rules for AI agents),
 [`CLAUDE.md`](CLAUDE.md) (architecture and gotchas),
+[`CONTRIBUTING.md`](CONTRIBUTING.md), [`SECURITY.md`](SECURITY.md),
 [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Prerequisites
@@ -152,13 +159,21 @@ Go and the linters run in containers; nothing is installed on the host.
 make test     # go test -race
 make lint     # golangci-lint (.golangci.yml)
 make vuln     # govulncheck
-make check    # all three; run before every commit
+make lint-ci  # actionlint + zizmor on .github/workflows
+make check    # all of the above; run before every commit (CI runs the same)
 make cover    # coverage summary
 ```
 
 Parser tests replay responses recorded from Ollama 0.40.13 in
 `internal/dialect/testdata`; proxy tests run the real proxy between an HTTP
 client and a fake Ollama.
+
+## Releases
+
+Tagging `vX.Y.Z` publishes `ghcr.io/a1exus/ollametry` for `linux/amd64` and
+`linux/arm64` with an SBOM and signed build provenance
+(`gh attestation verify oci://ghcr.io/a1exus/ollametry:X.Y.Z -R a1exus/ollametry`),
+and creates a GitHub release from that version's `CHANGELOG.md` section.
 
 ## License
 
