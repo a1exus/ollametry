@@ -1,0 +1,150 @@
+# promtool unit tests for ollametry-rules.yml: make rules-check.
+rule_files:
+  - ollametry-rules.yml
+
+evaluation_interval: 1m
+
+tests:
+  - name: Ollama down and up
+    interval: 1m
+    input_series:
+      - series: ollama_up
+        values: 1 1 0 0 0 0 0
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: OllamaDown
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: OllamaDown
+        exp_alerts:
+          - exp_labels: { severity: critical }
+            exp_annotations:
+              summary: Ollama is unreachable
+              description: ollametry has not reached Ollama's API for 2 minutes. Inference requests through the proxy fail with 502.
+
+  - name: ollametry absent
+    interval: 1m
+    input_series:
+      - series: unrelated_metric
+        values: 1x20
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: OllametryAbsent
+        exp_alerts: []
+      - eval_time: 10m
+        alertname: OllametryAbsent
+        exp_alerts:
+          - exp_labels: { severity: warning }
+            exp_annotations:
+              summary: No metrics from ollametry
+              description: No ollama_up series for 10 minutes. ollametry is down, or its exports or scrapes are failing.
+
+  - name: Server errors alert, client errors and cancellations do not
+    interval: 1m
+    input_series:
+      # 10 requests a minute, 2 of them failing with 500: 20 %.
+      - series: gen_ai_client_operation_duration_seconds_count{gen_ai_request_model="m", gen_ai_operation_name="chat"}
+        values: 0+8x30
+      - series: gen_ai_client_operation_duration_seconds_count{gen_ai_request_model="m", gen_ai_operation_name="chat", error_type="500"}
+        values: 0+2x30
+      # Only 404s and cancellations: no server errors.
+      - series: gen_ai_client_operation_duration_seconds_count{gen_ai_request_model="c", gen_ai_operation_name="chat"}
+        values: 0+5x30
+      - series: gen_ai_client_operation_duration_seconds_count{gen_ai_request_model="c", gen_ai_operation_name="chat", error_type="404"}
+        values: 0+5x30
+      - series: gen_ai_client_operation_duration_seconds_count{gen_ai_request_model="c", gen_ai_operation_name="chat", error_type="canceled"}
+        values: 0+5x30
+    promql_expr_test:
+      - expr: gen_ai_request_model:gen_ai_error_ratio:rate5m
+        eval_time: 10m
+        exp_samples:
+          - labels: 'gen_ai_request_model:gen_ai_error_ratio:rate5m{gen_ai_request_model="c"}'
+            value: 0
+          - labels: 'gen_ai_request_model:gen_ai_error_ratio:rate5m{gen_ai_request_model="m"}'
+            value: 0.2
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: OllamaHighErrorRate
+        exp_alerts:
+          - exp_labels: { severity: warning, gen_ai_request_model: m }
+            exp_annotations:
+              summary: "m: 20% of requests fail"
+              description: More than 5% of requests to m failed on the server side for 10 minutes (5xx, upstream errors, incomplete streams).
+
+  - name: Slow time to first token
+    interval: 1m
+    input_series:
+      # Every first token takes between 10 and 20 seconds.
+      - series: gen_ai_server_time_to_first_token_seconds_bucket{gen_ai_request_model="m", le="10"}
+        values: 0x40
+      - series: gen_ai_server_time_to_first_token_seconds_bucket{gen_ai_request_model="m", le="20"}
+        values: 0+1x40
+      - series: gen_ai_server_time_to_first_token_seconds_bucket{gen_ai_request_model="m", le="+Inf"}
+        values: 0+1x40
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: OllamaSlowTimeToFirstToken
+        exp_alerts: []
+      - eval_time: 25m
+        alertname: OllamaSlowTimeToFirstToken
+        exp_alerts:
+          - exp_labels: { severity: warning, gen_ai_request_model: m }
+            exp_annotations:
+              summary: "m: p95 time to first token 19.5s"
+              description: Streamed responses from m take over 10 seconds to start. Check queueing, model loads and prompt sizes.
+
+  - name: Cold loads count, warm loads do not
+    interval: 1m
+    input_series:
+      # Model "cold": one cold load (over 1 s) a minute.
+      - series: ollama_model_load_duration_seconds_count{gen_ai_request_model="cold"}
+        values: 0+1x90
+      - series: ollama_model_load_duration_seconds_bucket{gen_ai_request_model="cold", le="1"}
+        values: 0x90
+      # Model "warm": many requests, every load in milliseconds.
+      - series: ollama_model_load_duration_seconds_count{gen_ai_request_model="warm"}
+        values: 0+10x90
+      - series: ollama_model_load_duration_seconds_bucket{gen_ai_request_model="warm", le="1"}
+        values: 0+10x90
+    alert_rule_test:
+      - eval_time: 70m
+        alertname: OllamaModelThrashing
+        exp_alerts:
+          - exp_labels: { severity: warning, gen_ai_request_model: cold }
+            exp_annotations:
+              summary: cold cold-loaded 60 times in an hour
+              description: The model keeps being unloaded and loaded again. Raise keep_alive or OLLAMA_MAX_LOADED_MODELS, or free memory.
+
+  - name: Model partly outside GPU memory
+    interval: 1m
+    input_series:
+      - series: ollama_model_memory_size_bytes{ollama_model_name="big"}
+        values: 100x20
+      - series: ollama_model_memory_vram_size_bytes{ollama_model_name="big"}
+        values: 60x20
+      - series: ollama_model_memory_size_bytes{ollama_model_name="fits"}
+        values: 100x20
+      - series: ollama_model_memory_vram_size_bytes{ollama_model_name="fits"}
+        values: 100x20
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: OllamaModelOffloadedToCPU
+        exp_alerts:
+          - exp_labels: { severity: warning, ollama_model_name: big }
+            exp_annotations:
+              summary: "big: 40% runs outside GPU memory"
+              description: Part of the model does not fit in GPU memory and runs on the CPU, which is much slower. Use a smaller model or quantization, or fewer loaded models.
+
+  - name: Cardinality overflow
+    interval: 1m
+    input_series:
+      - series: gen_ai_client_operation_duration_seconds_count{otel_metric_overflow="true"}
+        values: 1x10
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: OllametryCardinalityOverflow
+        exp_alerts:
+          - exp_labels: { severity: warning }
+            exp_annotations:
+              summary: ollametry metrics hit the cardinality limit
+              description: Some measurements are folded into otel_metric_overflow series. Raise OLLAMETRY_CARDINALITY_LIMIT or find the source of new attribute values.
