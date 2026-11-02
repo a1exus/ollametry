@@ -231,7 +231,7 @@ func (p *Proxy) errorHandler(w http.ResponseWriter, r *http.Request, err error) 
 		ex.status = http.StatusBadGateway
 	}
 	p.cfg.Logger.LogAttrs(r.Context(), slog.LevelWarn, "upstream request failed",
-		slog.String("method", r.Method), slog.String("path", r.URL.Path), slog.Any("error", err))
+		slog.String("method", logMethod(r.Method)), slog.String("path", logPath(r.URL.Path)), slog.Any("error", err))
 	writeError(w, http.StatusBadGateway, "ollametry: upstream unavailable: "+err.Error())
 }
 
@@ -330,7 +330,7 @@ func (p *Proxy) finish(ctx context.Context, ex *exchange, clientErr error) {
 
 	if !ex.route.Inference() {
 		p.cfg.Logger.LogAttrs(ctx, slog.LevelDebug, "request",
-			slog.String("method", ex.method), slog.String("route", ex.route.Pattern),
+			slog.String("method", logMethod(ex.method)), slog.String("route", ex.route.Pattern),
 			slog.Int("status", ex.status), slog.Duration("duration", elapsed), slog.String("error.type", errType))
 		return
 	}
@@ -445,4 +445,22 @@ func methodAttr(method string) httpconv.RequestMethodAttr {
 		return m
 	}
 	return httpconv.RequestMethodOther
+}
+
+// maxLoggedPathLen bounds the request path in log lines.
+const maxLoggedPathLen = 256
+
+// logMethod and logPath bound client-controlled values before they reach a
+// log line. slog's handlers already escape control characters, so lines
+// cannot be forged; this keeps a client from inflating each line up to the
+// 1 MB header limit. Model names are bounded by sanitizeModel.
+func logMethod(method string) string {
+	return string(methodAttr(method))
+}
+
+func logPath(path string) string {
+	if len(path) <= maxLoggedPathLen {
+		return path
+	}
+	return strings.ToValidUTF8(path[:maxLoggedPathLen], "") + "…"
 }
