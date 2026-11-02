@@ -21,6 +21,7 @@ ollametry is a Go reverse proxy in front of a host-installed Ollama (macOS app, 
 | `deploy/grafana/ollametry.json` | Dashboard, uid `ollametry`, datasource variable defaulting to uid `prometheus`; provisioned by `~/opt/grafana` (`make dashboards`) |
 | `compose.yaml` | The `ollametry` service; Makefile lifecycle targets wrap `docker compose` |
 | `docs/` | User docs: clients, metrics, configuration, operations, development, releases. README is an overview with links |
+| `test/e2e` | E2E tests (`//go:build e2e`) and their throwaway stack `compose.yaml`. Integration tests are `*_integration_test.go` with `//go:build integration`; golangci-lint builds both tags |
 | `THIRD_PARTY_NOTICES.md`, `tools/notices.awk` | Third-party attribution. The Go module table between the `go-licenses` markers is generated (`make notices`, checked in CI by `notices-check`); the other sections are hand-written |
 
 ## Request flow
@@ -43,6 +44,7 @@ Verified against Ollama 0.40.13 and `grafana/otel-lgtm:0.39.0` (Prometheus 3.15.
 - **OTLP → Prometheus names**: `.` → `_`, unit suffixes added (`_seconds`, `_bytes`), counters get `_total`, `{token}`-style units add nothing. A unit of `"1"` adds `_ratio`, which is why `ollama.up` has no unit.
 - **OTLP counters have no start point in Prometheus**: the first export of a series is its baseline, so a model's first request is missing from `rate()`/`increase()`.
 - **Series from a replaced container linger 5 minutes** (no staleness markers for OTLP) with a different `service_version`; dashboard queries aggregate by model name, never `count()` raw series.
+- **ollametry sets no `service.instance.id`**, so Prometheus has no `instance` label: a restart of the same version continues the same series, and a new version shows up as a separate series by `service_version`. Tests and queries compare series by their full label set and never sum across them.
 - **Gauges of an unloaded model linger the same 5 minutes** (the SDK stops reporting unobserved series, Prometheus keeps the last sample). Model panels filter with `X and (time() - timestamp(X) < 45)`, three export intervals. For the same reason `ollama.up` has no attributes (up and down are one series) and the version lives on `ollama.build.info`.
 - **`gen_ai.request.model` only names models Ollama has** (`Poller.KnownModel` via `proxy.Config.KnownModel`); others become `_OTHER`. `ollama.inference.active` is cumulative, so every distinct name would hold a series forever.
 - **`http.Server.Close` does not wait for handlers**: shutdown calls `Proxy.Wait` before the final flush, and tests use it (`waitRecorded`) because `finish` records several metrics in turn.
@@ -55,7 +57,8 @@ Verified against Ollama 0.40.13 and `grafana/otel-lgtm:0.39.0` (Prometheus 3.15.
 
 | Workflow | Runs on | Does |
 |---|---|---|
-| `ci.yml` | PRs, pushes to `main` | Matrix of three parallel legs, each one `make` target: `ci-lint` (tidy-check, lint, vuln, lint-ci, dashboard-check, notices-check), `cover`, `fuzz` (20s per target). Caches are bind-mounted dirs (`CACHE_GOMOD`, `CACHE_GOBUILD`, `CACHE_GOLANGCI`) kept by `actions/cache`, saved only on pushes to `main`. Multi-arch image build without QEMU and a smoke test without Ollama; dependency review on PRs |
+| `ci.yml` | PRs, pushes to `main` | Matrix legs, each one `make` target: `ci-lint` (tidy-check, lint, vuln, lint-ci, dashboard-check, notices-check), `test-unit`, `cover` (unit + integration). Job `e2e` runs `make e2e-hermetic`. Caches are bind-mounted dirs (`CACHE_GOMOD`, `CACHE_GOBUILD`, `CACHE_GOLANGCI`) kept by `actions/cache`, saved only on pushes to `main`. Multi-arch image build without QEMU and a smoke test without Ollama; dependency review on PRs |
+| `fuzz.yml` | nightly, manual | `make fuzz` per target in parallel, 10 min each; failing inputs uploaded. Not a PR gate: PRs replay the corpus via `make test` |
 | `codeql.yml` | PRs, `main`, weekly | CodeQL `security-and-quality` for Go (`GOTOOLCHAIN=auto` for the go.mod version) |
 | `scorecard.yml` | `main`, weekly | OpenSSF Scorecard, published for the README badge |
 | `release.yml` | tags `vX.Y.Z` | GHCR image (amd64, arm64) with SBOM and provenance, attestation, GitHub release from the CHANGELOG section (fails if the section is missing) |
@@ -65,10 +68,12 @@ Every action is pinned to a commit SHA with the version in a comment, chosen at 
 ## Common commands
 
 ```sh
-make check              # lint, lint-ci, test, vuln (containers; CI runs the same)
+make check              # lint, lint-ci, unit + integration tests, vuln (CI runs the same)
 make up && make health  # build, run, verify against the real Ollama
 make smoke MODEL=granite4.2:8b
-make fuzz FUZZTIME=2m      # fuzz framer, decoders, model extraction
+make e2e                # E2E against the running stack (after make up)
+make e2e-hermetic       # E2E on a throwaway Ollama + otel-lgtm stack, as CI does
+make fuzz FUZZTIME=2m   # fuzz framer, decoders, model extraction (nightly in CI)
 make -C ~/opt/grafana dashboards   # provision the dashboard
 ```
 

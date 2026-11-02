@@ -9,7 +9,8 @@
 ## Checklist
 
 - [ ] `make check` passes
-- [ ] Tests cover the change (recorded fixture for new response shapes)
+- [ ] Tests cover the change at the right layer: unit, integration (`-tags integration`) or E2E (recorded fixture for new response shapes)
+- [ ] `make e2e` passes if the change affects what reaches Prometheus
 - [ ] `CHANGELOG.md` updated under `[Unreleased]`
 - [ ] `docs/`, CLAUDE.md and the dashboard updated if metrics, ports, variables or make targets changed
 - [ ] No prompt or response content in logs, metrics or errors

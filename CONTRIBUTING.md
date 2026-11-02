@@ -31,9 +31,12 @@ decoders handle. Both apply to human contributors too.
 
 - One logical change per pull request, in small commits with imperative
   subjects of at most 72 characters.
-- Add or update tests. New response shapes get a fixture recorded from a real
-  Ollama in `internal/dialect/testdata` (cap the output with `num_predict` or
-  `max_tokens` so fixtures stay small).
+- Add or update tests at the right layer (see
+  [Testing](docs/development.md#testing)): unit tests for logic, integration
+  tests for anything that crosses HTTP or OTLP, E2E when the user-visible
+  result in Prometheus changes. New response shapes get a fixture recorded from
+  a real Ollama in `internal/dialect/testdata` (cap the output with
+  `num_predict` or `max_tokens` so fixtures stay small).
 - A new dependency needs `make notices`; a new tool, service or action needs a row in
   [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 - Add a line to `CHANGELOG.md` under `## [Unreleased]`
