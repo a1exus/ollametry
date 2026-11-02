@@ -24,6 +24,7 @@ Operating rules for AI agents working in this repo. Architecture details and rat
 - **Metric names follow OTel semconv** where one exists (`gen_ai.*`, `http.server.*`); project metrics are `ollama.*`. Renaming a metric is a breaking change: update the dashboard, README and CHANGELOG together.
 - **Published ports bind to `${BIND_ADDRESS:-127.0.0.1}`.** Images and tool versions are pinned; never `latest`.
 - **Toolchains run in containers** via `make`. Host tools: `docker`, `make`, `curl`, `bash`.
+- **GitHub Actions are pinned to full commit SHAs** (version in a trailing comment), at least 14 days old, with least-privilege `permissions` commented per job. Untrusted event data never goes into `run:` directly; pass it through `env:`.
 
 ## Code conventions
 
@@ -34,7 +35,7 @@ Operating rules for AI agents working in this repo. Architecture details and rat
 ## Verification (run after every change)
 
 ```sh
-make check          # golangci-lint, go test -race, govulncheck
+make check          # golangci-lint, actionlint + zizmor, go test -race, govulncheck
 make up             # waits for the container healthcheck
 make health
 make smoke MODEL=<an installed model>
