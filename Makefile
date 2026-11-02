@@ -74,7 +74,7 @@ e2e: validate ## E2E tests against the running stack (make up) and host Ollama (
 	$(call E2E_RUN,$(GRAFANA_NETWORK),$(E2E_MODEL))
 
 .PHONY: e2e-hermetic
-e2e-hermetic: ## E2E tests on a throwaway Ollama + otel-lgtm + ollametry stack, as CI runs them
+e2e-hermetic: ## E2E tests on a throwaway Ollama + otel-lgtm + ollametry stack (no host Ollama needed)
 	@trap 'status=$$?; [ $$status -eq 0 ] || $(E2E_COMPOSE) logs --no-color ollametry | tail -n 50; $(E2E_COMPOSE) down --volumes --remove-orphans; exit $$status' EXIT; \
 	$(E2E_COMPOSE) up --detach --build --wait --wait-timeout 300; \
 	$(E2E_COMPOSE) exec -T ollama ollama pull '$(E2E_HERMETIC_MODEL)'; \

@@ -57,8 +57,14 @@ Three layers, from fast and isolated to slow and real:
 - **`make e2e-hermetic`** brings up a throwaway stack from
   [`test/e2e/compose.yaml`](../test/e2e/compose.yaml): Ollama with
   `smollm2:135m`, otel-lgtm, and ollametry built from the checkout. It tears
-  the stack down afterwards and prints ollametry's logs on failure. CI runs
-  this.
+  the stack down afterwards and prints ollametry's logs on failure. It needs
+  no host Ollama, so it also suits a machine without one.
+- **E2E runs locally only, never in GitHub CI.** It needs a real Ollama and
+  multi-GB images pulled from external registries, which makes it slow and
+  dependent on services outside the repository. Pull requests get the unit
+  and integration layers, which cover the assembled binary and real OTLP;
+  run `make e2e` before merging changes that affect what reaches Prometheus
+  (the pull request template asks for it).
 - E2E tests compare series one by one, never summed, and wait for exports
   instead of reading once: series from a replaced container linger for 5
   minutes, and metrics arrive on the export interval.
@@ -90,7 +96,7 @@ commit it with the fix so `make test` replays it from then on.
 
 | Workflow | Runs on | Does |
 |---|---|---|
-| `ci.yml` | PRs, pushes to `main` | Parallel legs: lint and scan (`make ci-lint`, including `notices-check`), unit tests (`make test-unit`), integration tests with coverage (`make cover`); E2E on a throwaway stack (`make e2e-hermetic`); multi-arch image build and a smoke test; dependency review on PRs |
+| `ci.yml` | PRs, pushes to `main` | Parallel legs: lint and scan (`make ci-lint`, including `notices-check`), unit tests (`make test-unit`), integration tests with coverage (`make cover`); multi-arch image build and a smoke test; dependency review on PRs |
 | `fuzz.yml` | Nightly, manual | Each fuzz target for 10 minutes, failing inputs uploaded |
 | `codeql.yml` | PRs, `main`, weekly | CodeQL `security-and-quality` for Go |
 | `scorecard.yml` | `main`, weekly | OpenSSF Scorecard |
