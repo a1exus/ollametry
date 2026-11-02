@@ -205,8 +205,16 @@ func TestRunExportsMetricsOverOTLP(t *testing.T) {
 	}
 
 	t.Run("prometheus endpoint", func(t *testing.T) {
-		// Recording happens after the response body is relayed; poll.
-		var scrape string
+		// Recording happens after the response body is relayed, and finish
+		// records input and output tokens in turn, so a scrape can fall
+		// between them: poll until every expected series is there.
+		wants := []string{
+			"\nollama_up 1\n",
+			`gen_ai_request_model="` + testModel + `"`,
+			`gen_ai_token_type="input",http_route="/api/chat"`,
+			`gen_ai_token_type="output",http_route="/api/chat"`,
+		}
+		var missing []string
 		deadline := time.Now().Add(5 * time.Second)
 		for {
 			req, _ := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://"+adminAddr+"/metrics", nil)
@@ -216,20 +224,19 @@ func TestRunExportsMetricsOverOTLP(t *testing.T) {
 			}
 			b, _ := io.ReadAll(resp.Body)
 			_ = resp.Body.Close()
-			scrape = string(b)
-			if strings.Contains(scrape, "gen_ai_client_token_usage_sum") || time.Now().After(deadline) {
+			missing = missing[:0]
+			for _, want := range wants {
+				if !strings.Contains(string(b), want) {
+					missing = append(missing, want)
+				}
+			}
+			if len(missing) == 0 || time.Now().After(deadline) {
 				break
 			}
 			time.Sleep(20 * time.Millisecond)
 		}
-		for _, want := range []string{
-			"\nollama_up 1\n",
-			`gen_ai_request_model="` + testModel + `"`,
-			`gen_ai_token_type="output",http_route="/api/chat"`,
-		} {
-			if !strings.Contains(scrape, want) {
-				t.Errorf("/metrics lacks %q", want)
-			}
+		for _, want := range missing {
+			t.Errorf("/metrics lacks %q after 5s", want)
 		}
 	})
 
