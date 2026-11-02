@@ -4,6 +4,7 @@ package ollama
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -211,5 +212,50 @@ func TestPollerCanceledPollKeepsLastState(t *testing.T) {
 	if got := h.poller.Snapshot(); !got.Up || got.Partial || !got.At.Equal(want.At) {
 		t.Errorf("snapshot after a canceled poll = up %v partial %v at %v, want the previous one (up, at %v)",
 			got.Up, got.Partial, got.At, want.At)
+	}
+}
+
+// Run polls at once, keeps polling on its interval, and returns promptly
+// when its context is canceled, which shutdown relies on.
+func TestPollerRunPollsUntilCanceled(t *testing.T) {
+	t.Parallel()
+	var polls atomic.Int32
+	fake := &fakeOllama{t: t}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/version" {
+			polls.Add(1)
+		}
+		fake.ServeHTTP(w, r)
+	}))
+	t.Cleanup(srv.Close)
+	u, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatalf("parse fake Ollama URL: %v", err)
+	}
+	p := NewPoller(NewClient(u, srv.Client()), 20*time.Millisecond, slog.New(slog.DiscardHandler))
+
+	ctx, cancel := context.WithCancel(t.Context())
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		p.Run(ctx)
+	}()
+
+	deadline := time.Now().Add(5 * time.Second)
+	for polls.Load() < 3 {
+		if time.Now().After(deadline) {
+			t.Fatalf("%d polls in 5s at a 20ms interval, want at least 3", polls.Load())
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	if !p.Ready() {
+		t.Error("Ready() = false after successful polls")
+	}
+
+	cancel()
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("Run did not return within 2s of cancellation")
 	}
 }
