@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Runs ollametry as a per-user launchd agent next to the Ollama app.
+  Install: docs/install.md. Adjust the binary path and the environment below;
+  launchd does not expand ~ or $HOME, so paths must be absolute.
+-->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>io.github.a1exus.ollametry</string>
+
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/local/bin/ollametry</string>
+	</array>
+
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>OLLAMETRY_OLLAMA_URL</key>
+		<string>http://127.0.0.1:11434</string>
+		<!-- Push OTLP to otel-lgtm's published port; set to none to only serve /metrics. -->
+		<key>OTEL_METRICS_EXPORTER</key>
+		<string>otlp</string>
+		<key>OTEL_EXPORTER_OTLP_ENDPOINT</key>
+		<string>http://127.0.0.1:4318</string>
+		<key>OTEL_RESOURCE_ATTRIBUTES</key>
+		<string>deployment.environment.name=local</string>
+	</dict>
+
+	<key>RunAtLoad</key>
+	<true/>
+	<!-- Restart after a crash, not after a clean exit (launchctl bootout). -->
+	<key>KeepAlive</key>
+	<dict>
+		<key>SuccessfulExit</key>
+		<false/>
+	</dict>
+	<key>ProcessType</key>
+	<string>Background</string>
+
+	<key>StandardOutPath</key>
+	<string>/tmp/ollametry.log</string>
+	<key>StandardErrorPath</key>
+	<string>/tmp/ollametry.log</string>
+</dict>
+</plist>

@@ -33,6 +33,7 @@ volumes `ollametry-gomod`, `ollametry-gobuild` and `ollametry-golangci`.
 | `make dashboard-check` | Validate the Grafana dashboard JSON |
 | `make notices` / `make notices-check` | Regenerate the Go module table in [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md); fail if it misses a dependency |
 | `make fuzz` | Fuzz the parsers (`FUZZTIME=30s` per target) |
+| `make dist` | Reproducible release archives and `SHA256SUMS` in `dist/` (`VERSION=vX.Y.Z`) |
 
 Tool versions are Makefile variables (`GO_VERSION`, `GOLANGCI_VERSION`, ...).
 `make help` lists every target.

@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Release binaries for macOS and Linux (`arm64`, `amd64`): reproducible archives with `SHA256SUMS`, built by `make dist` in the same pinned Go image as the container image, attested and attached to each GitHub release.
+- `ollametry version` (also `-version`, `--version`), falling back to the module version for `go install` builds.
+- macOS launchd agent (`deploy/launchd`) for running the binary next to the Ollama app, and an install guide (`docs/install.md`).
 - Prometheus exporter: `/metrics` on the admin listener (`:11436`) serves every metric in the Prometheus text format, alongside the OTLP push and from the same meter provider, so names, labels, views and limits match. On by default; `OLLAMETRY_PROMETHEUS=false` turns it off. Documented in `docs/prometheus.md`, including running without otel-lgtm.
 - Three test layers: unit (no build tag), integration (`-tags integration`: the proxy and poller against a fake Ollama, and the whole binary exporting OTLP/HTTP to a fake collector) and end-to-end (`test/e2e`, `-tags e2e`: requests through the container to a real Ollama in every API family, checked in otel-lgtm's Prometheus). `make test-unit`, `make test-integration`, `make e2e` (running stack), `make e2e-hermetic` (throwaway stack from `test/e2e/compose.yaml`). E2E runs locally only.
 - Nightly fuzzing workflow (`fuzz.yml`), 10 minutes per target in parallel, uploading failing inputs.
