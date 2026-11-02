@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Operating rules for AI agents working in this repo. Architecture details and rationale live in [`CLAUDE.md`](CLAUDE.md); user-facing setup is in [`README.md`](README.md).
+Operating rules for AI agents working in this repo. Architecture details and rationale live in [`CLAUDE.md`](CLAUDE.md); user-facing docs are [`README.md`](README.md) and [`docs/`](docs/).
 
 ## Security and privacy
 
@@ -21,7 +21,7 @@ Operating rules for AI agents working in this repo. Architecture details and rat
 
 - **The proxy is transparent.** Request and response bytes pass through unchanged (the one exception: `Accept-Encoding` is dropped upstream on inference routes, and the client gets an uncompressed body). Streams flush every write. A metrics failure never fails a request.
 - **Bounded cardinality.** `http.route` only from the known-route table; model names over 256 bytes become `_OTHER`; error types are status codes, a fixed set, or API types matching `^[a-z][a-z0-9_]{0,63}$`.
-- **Metric names follow OTel semconv** where one exists (`gen_ai.*`, `http.server.*`); project metrics are `ollama.*`. Renaming a metric is a breaking change: update the dashboard, README and CHANGELOG together.
+- **Metric names follow OTel semconv** where one exists (`gen_ai.*`, `http.server.*`); project metrics are `ollama.*`. Renaming a metric is a breaking change: update the dashboard, `docs/metrics.md` and CHANGELOG together.
 - **Published ports bind to `${BIND_ADDRESS:-127.0.0.1}`.** Images and tool versions are pinned; never `latest`.
 - **Toolchains run in containers** via `make`. Host tools: `docker`, `make`, `curl`, `bash`.
 - **GitHub Actions are pinned to full commit SHAs** (version in a trailing comment), at least 14 days old, with least-privilege `permissions` commented per job. Untrusted event data never goes into `run:` directly; pass it through `env:`.
@@ -47,4 +47,4 @@ Dashboard changes: run every query against Prometheus (see CLAUDE.md), `make -C 
 
 - Every change adds a line to `CHANGELOG.md` under `## [Unreleased]` ([Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/)). Dependency and image bumps go under `Changed` as old → new; vulnerability fixes under `Security`.
 - Commit subjects are imperative, ≤ 72 characters; small focused commits; work on a branch, never commit to `main`.
-- If a change alters metrics, ports, variables or make targets, update `README.md` and `CLAUDE.md` in the same change.
+- If a change alters metrics, ports, variables or make targets, update the matching `docs/` page (metrics, configuration, operations) and `CLAUDE.md` in the same change.

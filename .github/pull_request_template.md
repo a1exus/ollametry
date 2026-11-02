@@ -11,5 +11,5 @@
 - [ ] `make check` passes
 - [ ] Tests cover the change (recorded fixture for new response shapes)
 - [ ] `CHANGELOG.md` updated under `[Unreleased]`
-- [ ] README, CLAUDE.md and the dashboard updated if metrics, ports, variables or make targets changed
+- [ ] `docs/`, CLAUDE.md and the dashboard updated if metrics, ports, variables or make targets changed
 - [ ] No prompt or response content in logs, metrics or errors
