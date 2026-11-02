@@ -17,7 +17,7 @@ on macOS and Windows, containers run inside a VM, away from the GPU
 | OS | Docker |
 | --- | --- |
 | macOS | [Docker Desktop](containers.md#macos-docker-desktop) |
-| Linux | [Docker Engine](containers.md#linux-docker-engine) with the Compose plugin; on native Linux, Ollama itself may also run in a container with an [NVIDIA GPU](containers.md#nvidia-gpus-on-native-linux) |
+| Linux | [Docker Engine](containers.md#linux-docker-engine) with the Compose plugin; on native Linux, Ollama itself may also run in a container with an [NVIDIA](containers.md#nvidia-gpus-on-native-linux) or AMD GPU |
 | Windows | [WSL 2](containers.md#windows-wsl-2) with Docker Desktop or Docker Engine |
 
 You need Docker Compose v2.24 or newer, `make`, `curl` and `bash` (on

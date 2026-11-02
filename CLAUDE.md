@@ -12,7 +12,7 @@ ollametry is a Go reverse proxy in front of a host-installed Ollama (here the ma
 
 | Path | Role |
 | --- | --- |
-| `cmd/ollametry` | Wiring, graceful shutdown, `healthcheck` subcommand (distroless has no curl), `version` subcommand (falls back to the module version from build info for `go install`) |
+| `cmd/ollametry` | Wiring, graceful shutdown, `healthcheck` subcommand (distroless has no curl), `version` subcommand (unstamped builds fall back to the module version from build info) |
 | `internal/config` | Flags with `OLLAMETRY_*` env defaults; all errors reported at once |
 | `internal/route` | Path → `http.route` template, GenAI operation, response dialect. Unknown paths get no route (cardinality) |
 | `internal/dialect` | `Framer` (JSON / NDJSON / SSE, chunk-boundary safe, size-capped) and one `Decoder` per API family filling a `Result` |
