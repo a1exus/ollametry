@@ -1,14 +1,14 @@
 name: Release
 
 # Pushing a tag vX.Y.Z publishes ghcr.io/<owner>/ollametry for amd64 and
-# arm64 with SBOM and provenance attestations, builds reproducible binary
-# archives for macOS, Linux and Windows with provenance attestations, then
-# creates a GitHub release carrying the archives and SHA256SUMS.
+# arm64 with SBOM and provenance attestations, then creates a GitHub release
+# whose notes are the version's CHANGELOG.md section. ollametry ships only as
+# this container image.
 #
 # Running it manually (workflow_dispatch) is a dry run: it builds the image
-# and the archives and renders the release notes from [Unreleased], but logs
-# in, pushes, attests and releases nothing. The archives and notes are
-# uploaded as a workflow artifact to inspect before tagging.
+# and renders the release notes from [Unreleased], but logs in, pushes,
+# attests and releases nothing. The notes are uploaded as a workflow artifact
+# to inspect before tagging.
 on:
   push:
     tags: ["v[0-9]+.[0-9]+.[0-9]+"]
@@ -104,44 +104,10 @@ jobs:
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
 
-  binaries:
-    name: Binaries
-    needs: version
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    permissions:
-      contents: read # check out the repository
-      id-token: write # sign the provenance attestation (Sigstore OIDC)
-      attestations: write # store the attestation
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      # Same pinned golang image and flags as the container image; archives
-      # are reproducible (tools/dist.sh).
-      - name: make dist
-        env:
-          VERSION: ${{ needs.version.outputs.version }}
-        run: make dist VERSION="$VERSION"
-
-      - if: env.PUBLISH == 'true'
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-path: |
-            dist/*.tar.gz
-            dist/*.zip
-
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: dist
-          path: dist/
-          if-no-files-found: error
-          retention-days: 7
 
   github-release:
     name: GitHub release
-    needs: [version, image, binaries]
+    needs: [version, image]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -150,11 +116,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: dist
-          path: dist
 
       # Release notes are the tag's section of CHANGELOG.md (Keep a Changelog);
       # a dry run renders [Unreleased], which becomes the next version.
@@ -175,8 +136,8 @@ jobs:
             echo "::error file=CHANGELOG.md::no section for [$section]; move Unreleased entries under it before tagging"
             exit 1
           fi
-          printf '\n## Image\n\n    ghcr.io/%s:%s\n    %s\n' "$GITHUB_REPOSITORY" "$version" "$DIGEST" >> notes.md
-          printf '\n## Binaries\n\nArchives for macOS and Linux (.tar.gz) and Windows (.zip) are attached. Verify a download before use:\n\n    sha256sum --check --ignore-missing SHA256SUMS\n    gh attestation verify ollametry_%s_<os>_<arch>.<tar.gz|zip> -R %s\n' "$version" "$GITHUB_REPOSITORY" >> notes.md
+          printf '\n## Image\n\n    ghcr.io/%s:%s\n    %s\n\nVerify it before use:\n\n    gh attestation verify oci://ghcr.io/%s:%s -R %s\n' \
+            "$GITHUB_REPOSITORY" "$version" "$DIGEST" "$GITHUB_REPOSITORY" "$version" "$GITHUB_REPOSITORY" >> notes.md
           {
             echo "### Release notes ($section)"
             cat notes.md
@@ -187,7 +148,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.version.outputs.version }}
-        run: gh release create "$TAG" --title "$TAG" --notes-file notes.md --verify-tag dist/*.tar.gz dist/*.zip dist/SHA256SUMS
+        run: gh release create "$TAG" --title "$TAG" --notes-file notes.md --verify-tag
 
       - name: Upload dry-run notes
         if: env.PUBLISH != 'true'
