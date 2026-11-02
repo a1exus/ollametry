@@ -3,32 +3,32 @@
 [← README](../README.md)
 
 - [How ollametry runs](#how-ollametry-runs)
-- [With this repository (Docker Compose)](#with-this-repository-docker-compose)
-- [From the published image](#from-the-published-image)
+- [Building from source](#building-from-source)
+- [Using a published image](#using-a-published-image)
 - [Verifying an image](#verifying-an-image)
 
 ## How ollametry runs
 
-ollametry runs in a container, next to Ollama on the host. Ollama stays on
-the host everywhere except native Linux: on macOS and Windows, containers run
-inside a VM, away from the GPU
+ollametry runs in a container with Docker Compose, through `make`, next to
+Ollama on the host. Ollama stays on the host everywhere except native Linux:
+on macOS and Windows, containers run inside a VM, away from the GPU
 ([GPU access](containers.md#where-ollama-runs-gpu-access)).
-Any container runtime works; [container environments](containers.md) covers
-how each one reaches Ollama on the host:
 
-| OS | Container runtime |
+| OS | Docker |
 | --- | --- |
-| macOS | [Docker Desktop](containers.md#macos-docker-desktop), [Apple `container`](containers.md#macos-apple-container) |
-| Linux | [Docker Engine](containers.md#linux-docker-engine); on native Linux, Ollama itself may also run in a container with an [NVIDIA GPU](containers.md#nvidia-gpus-on-native-linux) |
+| macOS | [Docker Desktop](containers.md#macos-docker-desktop) |
+| Linux | [Docker Engine](containers.md#linux-docker-engine) with the Compose plugin; on native Linux, Ollama itself may also run in a container with an [NVIDIA GPU](containers.md#nvidia-gpus-on-native-linux) |
 | Windows | [WSL 2](containers.md#windows-wsl-2) with Docker Desktop or Docker Engine |
 
-The image is `linux/amd64` and `linux/arm64`, distroless, and runs as a
-non-root user. Every way serves the same proxy (`:11435`), health and
-`/metrics` (`:11436`), and OTLP push (see [configuration](configuration.md)).
+You need Docker Compose v2.24 or newer, `make`, `curl` and `bash` (on
+Windows, in the WSL shell). The image is `linux/amd64` and `linux/arm64`,
+distroless, and runs as a non-root user. It serves the proxy (`:11435`),
+health and `/metrics` (`:11436`), and OTLP push (see
+[configuration](configuration.md)).
 
-## With this repository (Docker Compose)
+## Building from source
 
-This repository's setup builds the image from source and runs it next to the
+`make up` builds the image from this repository and starts it next to the
 `~/opt/grafana` stack:
 
 ```sh
@@ -36,29 +36,25 @@ make up        # docker compose up -d --build, wait until healthy
 make health    # Ollama, the proxy, readiness
 ```
 
-Lifecycle, health and troubleshooting are in [operations](operations.md). To
-run a published image with the same Compose file instead of building one, see
-[releases](releases.md#using-a-released-image).
+Lifecycle, health and troubleshooting are in [operations](operations.md).
 
-## From the published image
+## Using a published image
 
 Each release publishes `ghcr.io/a1exus/ollametry:<version>` (also `X.Y`, and
-`X` from 1.0):
+`X` from 1.0). To run it instead of building, add a `compose.override.yaml`
+next to `compose.yaml`; Compose reads it automatically, and `!reset` removes
+the build section:
 
-```sh
-docker run -d --name ollametry --restart unless-stopped \
-  -p 127.0.0.1:11435:11435 -p 127.0.0.1:11436:11436 \
-  -e OLLAMETRY_OLLAMA_URL=http://host.docker.internal:11434 \
-  -e OTEL_METRICS_EXPORTER=none \
-  ghcr.io/a1exus/ollametry:0.1.0
-curl -s http://127.0.0.1:11436/readyz      # ok once ollametry reaches Ollama
-docker exec ollametry ollametry version
+```yaml
+services:
+  ollametry:
+    build: !reset null
+    image: ghcr.io/a1exus/ollametry:0.1.0
+    pull_policy: missing
 ```
 
-`OTEL_METRICS_EXPORTER=none` serves `/metrics` for Prometheus only; set
-`OTEL_EXPORTER_OTLP_ENDPOINT` instead to push OTLP. On Linux,
-`host.docker.internal` needs
-[one more setting](containers.md#linux-docker-engine).
+`make up` then pulls the image instead of building it; everything else stays
+the same.
 
 ## Verifying an image
 
@@ -70,4 +66,5 @@ gh attestation verify oci://ghcr.io/a1exus/ollametry:0.1.0 -R a1exus/ollametry
 ```
 
 The image carries `LICENSE` and `THIRD_PARTY_NOTICES.md` in
-`/usr/share/doc/ollametry/`.
+`/usr/share/doc/ollametry/`, and `docker compose exec ollametry ollametry
+version` prints its version.

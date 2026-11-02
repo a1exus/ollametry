@@ -66,10 +66,12 @@ The first release.
   non-root, with SBOM, provenance and the license notices in
   `/usr/share/doc/ollametry/`.
 - Docker Compose setup with `make` lifecycle targets (`up`, `down`, `logs`,
-  `health`, ...), and guidance for running the container on macOS, Linux and
-  Windows. Ollama runs on the host everywhere except native Linux, where it
-  may also run in a container with an NVIDIA or AMD GPU.
-- `ollametry` runs only in this container; there are no separate binaries.
+  `health`, ...), the one way to run ollametry, from source or from a
+  published image, on macOS, Linux and Windows. Ollama runs on the host
+  everywhere except native Linux, where it may also run in a container with an
+  NVIDIA or AMD GPU.
+- ollametry runs only in this container, with Docker Compose; there are no
+  separate binaries.
 
 #### Quality and supply chain
 
