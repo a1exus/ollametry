@@ -6,12 +6,17 @@
 [![Go](https://img.shields.io/github/go-mod/go-version/a1exus/ollametry)](go.mod)
 [![License: MIT](https://img.shields.io/github/license/a1exus/ollametry)](LICENSE)
 
-A transparent reverse proxy for [Ollama](https://ollama.com) that exports
-OpenTelemetry metrics: token usage, latency, time to first token and decode
-speed per model, error rates, and the models Ollama holds in memory. Metrics
-follow the OpenTelemetry [GenAI semantic conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/)
-and go over OTLP to [`grafana/otel-lgtm`](https://github.com/grafana/docker-otel-lgtm)
-(`~/opt/grafana`), with a ready-made Grafana dashboard.
+An **Ollama metrics exporter** for Prometheus and OpenTelemetry. ollametry is a
+transparent reverse proxy for [Ollama](https://ollama.com) that measures token
+usage, latency, time to first token and decode speed per model, error rates,
+and the models Ollama holds in memory. Metrics follow the OpenTelemetry
+[GenAI semantic conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/)
+and leave two ways, with a ready-made Grafana dashboard for either:
+
+- **Prometheus scrape**: `/metrics` on `:11436`, for any Prometheus-compatible
+  scraper ([Prometheus exporter](docs/prometheus.md)).
+- **OTLP push**: to [`grafana/otel-lgtm`](https://github.com/grafana/docker-otel-lgtm)
+  (`~/opt/grafana`) or any OpenTelemetry backend.
 
 Ollama has no metrics endpoint, so ollametry sits in front of it and reads the
 usage statistics Ollama already returns in every response. Requests and
@@ -23,8 +28,8 @@ responses pass through byte for byte, streaming included.
                  ├─ per request: gen_ai.* and http.server.* metrics
                  └─ every 15 s:  /api/ps, /api/tags → ollama.* gauges
                  │
-                 ▼ OTLP/HTTP
-            otel-lgtm :4318 ──► Prometheus ──► Grafana dashboard
+                 ├─ :11436/metrics ◄── Prometheus scrape
+                 └─ OTLP/HTTP ──► otel-lgtm :4318 ──► Prometheus ──► Grafana
 ```
 
 ## Contents
@@ -60,7 +65,8 @@ export OPENAI_BASE_URL=http://127.0.0.1:11435/v1
 export ANTHROPIC_BASE_URL=http://127.0.0.1:11435
 ```
 
-The dashboard is at `https://grafana.localhost/d/ollametry` (folder "ollama").
+Prometheus can scrape `http://127.0.0.1:11436/metrics`, and the dashboard is at
+`https://grafana.localhost/d/ollametry` (folder "ollama").
 `make logs` follows the logs, `make down` stops everything, and `make help`
 lists every target.
 
@@ -70,6 +76,7 @@ lists every target.
 |---|---|
 | [Clients](docs/clients.md) | Pointing the Ollama CLI and OpenAI/Anthropic SDKs at the proxy; measuring every client |
 | [Metrics](docs/metrics.md) | Every metric and attribute, `error.type`, limits, writing PromQL against OTLP series |
+| [Prometheus exporter](docs/prometheus.md) | Scraping `/metrics`, running without otel-lgtm, how it compares with OTLP |
 | [Configuration](docs/configuration.md) | `OLLAMETRY_*`, `OTEL_*` and Compose variables |
 | [Operations](docs/operations.md) | Compose lifecycle targets, health endpoints, dashboard provisioning, upgrading, troubleshooting |
 | [Development](docs/development.md) | Containerized toolchain, tests, fuzzing, CI |

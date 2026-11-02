@@ -25,6 +25,8 @@ type ProviderConfig struct {
 	CardinalityLimit int
 	// Reader overrides the environment-configured reader; used by tests.
 	Reader sdkmetric.Reader
+	// ExtraReaders are added next to it, such as the Prometheus reader.
+	ExtraReaders []sdkmetric.Reader
 }
 
 // NewMeterProvider builds a meter provider whose exporter is configured by
@@ -51,12 +53,16 @@ func NewMeterProvider(ctx context.Context, cfg ProviderConfig) (*sdkmetric.Meter
 		}
 	}
 
-	mp := sdkmetric.NewMeterProvider(
+	opts := []sdkmetric.Option{
 		sdkmetric.WithResource(res),
 		sdkmetric.WithReader(reader),
 		sdkmetric.WithCardinalityLimit(cfg.CardinalityLimit),
 		sdkmetric.WithView(httpDurationView()),
-	)
+	}
+	for _, r := range cfg.ExtraReaders {
+		opts = append(opts, sdkmetric.WithReader(r))
+	}
+	mp := sdkmetric.NewMeterProvider(opts...)
 	if err := runtime.Start(runtime.WithMeterProvider(mp), runtime.WithMinimumReadMemStatsInterval(15*time.Second)); err != nil {
 		return nil, fmt.Errorf("start Go runtime metrics: %w", err)
 	}

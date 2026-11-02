@@ -23,7 +23,8 @@ func TestLoad(t *testing.T) {
 				t.Helper()
 				if c.ListenAddr != DefaultListenAddr || c.AdminAddr != DefaultAdminAddr ||
 					c.OllamaURL.String() != DefaultOllamaURL || c.PollInterval != DefaultPollInterval ||
-					c.MaxInspectBytes != DefaultMaxInspectBytes || c.LogLevel != slog.LevelInfo || c.LogFormat != "json" {
+					c.MaxInspectBytes != DefaultMaxInspectBytes || c.LogLevel != slog.LevelInfo || c.LogFormat != "json" ||
+					!c.Prometheus {
 					t.Errorf("defaults = %+v", c)
 				}
 			},
@@ -63,6 +64,17 @@ func TestLoad(t *testing.T) {
 		{name: "negative inspect", args: []string{"-max-inspect-bytes", "-1"}, wantErr: []string{"max-inspect-bytes"}},
 		{name: "bad log level", args: []string{"-log-level", "loud"}, wantErr: []string{"log-level"}},
 		{name: "bad log format", args: []string{"-log-format", "xml"}, wantErr: []string{"log-format"}},
+		{name: "bad prometheus switch", args: []string{"-prometheus", "maybe"}, wantErr: []string{"prometheus"}},
+		{
+			name: "prometheus off",
+			env:  map[string]string{"OLLAMETRY_PROMETHEUS": "false"},
+			check: func(t *testing.T, c Config) {
+				t.Helper()
+				if c.Prometheus {
+					t.Error("Prometheus = true with OLLAMETRY_PROMETHEUS=false")
+				}
+			},
+		},
 		{name: "same addresses", args: []string{"-listen", ":1", "-admin-listen", ":1"}, wantErr: []string{"also the proxy"}},
 		{name: "positional argument", args: []string{"serve"}, wantErr: []string{"unexpected arguments"}},
 		{name: "unknown flag", args: []string{"-nope"}, wantErr: []string{"parse flags"}},

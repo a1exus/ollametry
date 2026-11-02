@@ -17,6 +17,7 @@ variables. `docker run --rm ollametry:dev -help` lists the flags.
 | `OLLAMETRY_MAX_INSPECT_BYTES` | `33554432` | same | Largest request body / response record decoded; larger ones pass through unmeasured |
 | `OLLAMETRY_CARDINALITY_LIMIT` | `2000` | same | Attribute sets per metric |
 | `OLLAMETRY_LOG_LEVEL`, `OLLAMETRY_LOG_FORMAT` | `info`, `json` | same | Logging (`text` for humans) |
+| `OLLAMETRY_PROMETHEUS` | `true` | same | Serve Prometheus metrics at `/metrics` on the admin listener ([Prometheus exporter](prometheus.md)) |
 
 ## OpenTelemetry exporter
 
@@ -28,7 +29,7 @@ The exporter is configured by the standard OpenTelemetry variables:
 | `OTEL_METRIC_EXPORT_INTERVAL` | `15000` | Export interval in ms |
 | `OTEL_RESOURCE_ATTRIBUTES` | `deployment.environment.name=local` | Extra resource attributes |
 | `OTEL_SERVICE_NAME` | `ollametry` | `service.name` |
-| `OTEL_METRICS_EXPORTER` | `otlp` | `prometheus` serves a scrape endpoint instead; `console` prints; `none` disables |
+| `OTEL_METRICS_EXPORTER` | `otlp` | Push exporter: `otlp`, `console` (prints), or `none` (no push; `/metrics` still serves). For scraping use `/metrics` rather than `prometheus` here, which opens a second endpoint on port 9464 |
 
 ## Compose
 

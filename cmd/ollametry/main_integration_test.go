@@ -204,6 +204,35 @@ func TestRunExportsMetricsOverOTLP(t *testing.T) {
 		t.Errorf("proxy changed the response body: got %d bytes, want the %d recorded", len(got), len(want))
 	}
 
+	t.Run("prometheus endpoint", func(t *testing.T) {
+		// Recording happens after the response body is relayed; poll.
+		var scrape string
+		deadline := time.Now().Add(5 * time.Second)
+		for {
+			req, _ := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://"+adminAddr+"/metrics", nil)
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				t.Fatalf("GET /metrics: %v", err)
+			}
+			b, _ := io.ReadAll(resp.Body)
+			_ = resp.Body.Close()
+			scrape = string(b)
+			if strings.Contains(scrape, "gen_ai_client_token_usage_sum") || time.Now().After(deadline) {
+				break
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+		for _, want := range []string{
+			"\nollama_up 1\n",
+			`gen_ai_request_model="` + testModel + `"`,
+			`gen_ai_token_type="output",http_route="/api/chat"`,
+		} {
+			if !strings.Contains(scrape, want) {
+				t.Errorf("/metrics lacks %q", want)
+			}
+		}
+	})
+
 	cancel()
 	select {
 	case err := <-done:
