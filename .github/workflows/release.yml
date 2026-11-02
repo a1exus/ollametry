@@ -125,13 +125,26 @@ jobs:
           DIGEST: ${{ needs.image.outputs.digest }}
         run: |
           version="${VERSION#v}"
-          section="$version"
-          [ "$PUBLISH" = true ] || section=Unreleased
-          awk -v v="$section" '
-            index($0, "## [" v "]") == 1 { found = 1; next }
-            found && (/^## \[/ || /^\[[^]]+\]: /) { exit }
-            found { print }
-          ' CHANGELOG.md > notes.md
+          render() {
+            awk -v v="$1" '
+              index($0, "## [" v "]") == 1 { found = 1; next }
+              found && (/^## \[/ || /^\[[^]]+\]: /) { exit }
+              found { print }
+            ' CHANGELOG.md | sed -e '/./,$!d' > notes.md
+          }
+          if [ "$PUBLISH" = true ]; then
+            section="$version"
+            render "$section"
+          else
+            # A dry run previews [Unreleased]; right after its entries moved
+            # under a new version, it previews that version instead.
+            section=Unreleased
+            render "$section"
+            if [ ! -s notes.md ]; then
+              section=$(sed -n 's/^## \[\([0-9][^]]*\)\].*/\1/p' CHANGELOG.md | head -n 1)
+              render "$section"
+            fi
+          fi
           if [ ! -s notes.md ]; then
             echo "::error file=CHANGELOG.md::no section for [$section]; move Unreleased entries under it before tagging"
             exit 1
