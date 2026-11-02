@@ -128,7 +128,9 @@ jobs:
       - if: env.PUBLISH == 'true'
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
-          subject-path: dist/*.tar.gz
+          subject-path: |
+            dist/*.tar.gz
+            dist/*.zip
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -174,7 +176,7 @@ jobs:
             exit 1
           fi
           printf '\n## Image\n\n    ghcr.io/%s:%s\n    %s\n' "$GITHUB_REPOSITORY" "$version" "$DIGEST" >> notes.md
-          printf '\n## Binaries\n\nmacOS and Linux archives are attached. Verify a download before use:\n\n    sha256sum --check --ignore-missing SHA256SUMS\n    gh attestation verify ollametry_%s_<os>_<arch>.tar.gz -R %s\n' "$version" "$GITHUB_REPOSITORY" >> notes.md
+          printf '\n## Binaries\n\nArchives for macOS and Linux (.tar.gz) and Windows (.zip) are attached. Verify a download before use:\n\n    sha256sum --check --ignore-missing SHA256SUMS\n    gh attestation verify ollametry_%s_<os>_<arch>.<tar.gz|zip> -R %s\n' "$version" "$GITHUB_REPOSITORY" >> notes.md
           {
             echo "### Release notes ($section)"
             cat notes.md
@@ -185,7 +187,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.version.outputs.version }}
-        run: gh release create "$TAG" --title "$TAG" --notes-file notes.md --verify-tag dist/*.tar.gz dist/SHA256SUMS
+        run: gh release create "$TAG" --title "$TAG" --notes-file notes.md --verify-tag dist/*.tar.gz dist/*.zip dist/SHA256SUMS
 
       - name: Upload dry-run notes
         if: env.PUBLISH != 'true'
