@@ -43,12 +43,13 @@ Verified against Ollama 0.40.13 and `grafana/otel-lgtm:0.39.0` (Prometheus 3.15.
 - **httpconv appends its default options after the caller's**, so bucket overrides must be SDK Views (`telemetry.httpDurationView`).
 - **The dashboard is file-provisioned by `~/opt/grafana`** (`make dashboards` there copies `deploy/grafana/*.json`). Grafana refuses UI and API saves of provisioned dashboards, so edit the JSON here and re-sync.
 - **`govulncheck` below v1.9 panics on Go 1.27** (`unexpected expr: *ast.KeyValueExpr`).
+- **Ollama decodes requests with `encoding/json`**: keys match case-insensitively (`"Model"` works) and the last duplicate wins. `modelFromPrefix` (bodies over `MaxInspectBytes`) mirrors this; `FuzzModelFromPrefix` checks it against `encoding/json` on every valid body.
 
 ## CI and releases
 
 | Workflow | Runs on | Does |
 |---|---|---|
-| `ci.yml` | PRs, pushes to `main` | `make tidy` diff, `make lint`, `make cover`, `make vuln`, `make lint-ci`, dashboard JSON check; multi-arch image build and a smoke test without Ollama; dependency review on PRs |
+| `ci.yml` | PRs, pushes to `main` | `make tidy` diff, `make lint`, `make cover`, `make vuln`, `make fuzz` (20s per target), `make lint-ci`, dashboard JSON check; multi-arch image build and a smoke test without Ollama; dependency review on PRs |
 | `codeql.yml` | PRs, `main`, weekly | CodeQL `security-and-quality` for Go (`GOTOOLCHAIN=auto` for the go.mod version) |
 | `scorecard.yml` | `main`, weekly | OpenSSF Scorecard, published for the README badge |
 | `release.yml` | tags `vX.Y.Z` | GHCR image (amd64, arm64) with SBOM and provenance, attestation, GitHub release from the CHANGELOG section (fails if the section is missing) |
@@ -61,6 +62,7 @@ Every action is pinned to a commit SHA with the version in a comment, chosen at 
 make check              # lint, lint-ci, test, vuln (containers; CI runs the same)
 make up && make health  # build, run, verify against the real Ollama
 make smoke MODEL=granite4.2:8b
+make fuzz FUZZTIME=2m      # fuzz framer, decoders, model extraction
 make -C ~/opt/grafana dashboards   # provision the dashboard
 ```
 

@@ -45,6 +45,18 @@ cover: ## Run tests and print per-function coverage
 	$(GO) test -race -count=1 -coverprofile=coverage.out ./...
 	$(GO) tool cover -func=coverage.out | tail -n 25
 
+FUZZTIME ?= 30s
+FUZZ_TARGETS := ./internal/dialect:FuzzFramer ./internal/dialect:FuzzDecoders \
+	./internal/proxy:FuzzModelFromPrefix
+
+.PHONY: fuzz
+fuzz: ## Fuzz each parser for FUZZTIME (default 30s); failures land in testdata/fuzz
+	@for t in $(FUZZ_TARGETS); do \
+		pkg=$${t%%:*}; name=$${t##*:}; \
+		echo "==> $$name ($$pkg, $(FUZZTIME))"; \
+		$(GO) test -run='^$$' -fuzz="^$$name\$$" -fuzztime=$(FUZZTIME) $$pkg || exit 1; \
+	done
+
 .PHONY: lint
 lint: ## Run golangci-lint (config: .golangci.yml)
 	$(GOLANGCI) run ./...

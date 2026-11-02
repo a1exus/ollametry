@@ -15,6 +15,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -236,31 +237,33 @@ func modelFromBody(body []byte) string {
 	return v.Model
 }
 
-// modelFromPrefix walks the top-level members of a truncated JSON object
-// until it finds "model" or runs out of input.
+// modelFromPrefix walks the top-level members of a truncated JSON object and
+// returns the model it names so far. It resolves keys the way encoding/json
+// does, and with it Ollama: case-insensitively, last duplicate wins, null
+// leaves the value unchanged, and a non-string model invalidates the body.
 func modelFromPrefix(prefix []byte) string {
 	dec := json.NewDecoder(bytes.NewReader(prefix))
 	if tok, err := dec.Token(); err != nil || tok != json.Delim('{') {
 		return ""
 	}
+	var model string
 	for dec.More() {
-		key, err := dec.Token()
+		tok, err := dec.Token()
 		if err != nil {
-			return ""
+			return model
 		}
-		if key == "model" {
-			var model string
+		if key, _ := tok.(string); strings.EqualFold(key, "model") {
 			if err := dec.Decode(&model); err != nil {
 				return ""
 			}
-			return model
+			continue
 		}
 		var skip json.RawMessage
 		if err := dec.Decode(&skip); err != nil {
-			return ""
+			return model
 		}
 	}
-	return ""
+	return model
 }
 
 func sanitizeModel(model string) string {

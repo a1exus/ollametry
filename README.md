@@ -161,6 +161,7 @@ make lint     # golangci-lint (.golangci.yml)
 make vuln     # govulncheck
 make lint-ci  # actionlint + zizmor on .github/workflows
 make check    # all of the above; run before every commit (CI runs the same)
+make fuzz     # fuzz the parsers, FUZZTIME=30s per target
 make cover    # coverage summary
 ```
 
