@@ -96,3 +96,25 @@ func TestLogValuesAreBounded(t *testing.T) {
 		})
 	}
 }
+
+// Model names over maxModelNameLen are not model names and would only add
+// series, so they fold into _OTHER; the limit itself is kept.
+func TestSanitizeModel(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name, model, want string
+	}{
+		{"empty", "", ""},
+		{"ordinary", "granite4.2:8b", "granite4.2:8b"},
+		{"at the limit", strings.Repeat("m", maxModelNameLen), strings.Repeat("m", maxModelNameLen)},
+		{"over the limit", strings.Repeat("m", maxModelNameLen+1), otherModel},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := sanitizeModel(tt.model); got != tt.want {
+				t.Errorf("sanitizeModel(%d bytes) = %.20q…, want %.20q…", len(tt.model), got, tt.want)
+			}
+		})
+	}
+}
