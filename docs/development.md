@@ -32,6 +32,7 @@ volumes `ollametry-gomod`, `ollametry-gobuild` and `ollametry-golangci`.
 | `make tidy` / `make tidy-check` | Tidy `go.mod`; fail if it is not tidy |
 | `make versions-check` | Fail if `go.mod`, the Makefile and the Dockerfile name different Go versions |
 | `make lint-ci` | actionlint and zizmor on `.github/workflows` |
+| `make openapi-check` | Spectral lint of [`api/openapi.yaml`](../api/openapi.yaml); `TestHandlerMatchesOpenAPI` checks it against the real handlers |
 | `make dashboard-check` | Validate the Grafana dashboard JSON |
 | `make rules-check` | `promtool check rules` and `promtool test rules` on [`deploy/prometheus`](../deploy/prometheus) |
 | `make notices` / `make notices-check` | Regenerate the Go module table in [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md); fail if it misses a dependency |
@@ -132,7 +133,7 @@ make benchstat                         # compares old.txt with bench.txt
 
 | Workflow | Runs on | Does |
 |---|---|---|
-| `ci.yml` | PRs, pushes to `main` | Parallel legs: lint and scan (`make ci-lint`, including `rules-check` and `notices-check`), unit tests (`make test-unit`), integration tests with coverage (`make cover`); multi-arch image build and a smoke test; dependency review on PRs |
+| `ci.yml` | PRs, pushes to `main` | Parallel legs: lint and scan (`make ci-lint`, including `openapi-check`, `rules-check` and `notices-check`), unit tests (`make test-unit`), integration tests with coverage (`make cover`); multi-arch image build and a smoke test; dependency review on PRs |
 | `fuzz.yml` | Nightly, manual | Each fuzz target for 10 minutes, failing inputs uploaded |
 | `codeql.yml` | PRs, `main`, weekly | CodeQL `security-and-quality` for Go |
 | `scorecard.yml` | `main`, weekly | OpenSSF Scorecard |
