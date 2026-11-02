@@ -1,4 +1,5 @@
 # syntax=docker/dockerfile:1
+# check=error=true
 
 # Base images are pinned to their multi-arch index digest so a retagged image
 # cannot change the build. Tags are literal, not ARGs, so Dependabot can update
@@ -26,7 +27,9 @@ LABEL org.opencontainers.image.title="ollametry" \
       org.opencontainers.image.source="https://github.com/a1exus/ollametry" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.licenses="MIT"
-COPY --from=build /out/ollametry /usr/local/bin/ollametry
+# --link: the layer does not depend on the base image, so a base image update
+# reuses it instead of rebuilding.
+COPY --link --from=build /out/ollametry /usr/local/bin/ollametry
 ENV OLLAMETRY_LISTEN_ADDR=0.0.0.0:11435 \
     OLLAMETRY_ADMIN_ADDR=0.0.0.0:11436
 EXPOSE 11435 11436

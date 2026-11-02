@@ -12,6 +12,9 @@ services:
       args:
         VERSION: ${VERSION:-dev}
     image: ollametry:${VERSION:-dev}
+    # Built locally, never pulled: `docker compose pull` skips it and `up` builds
+    # it when missing.
+    pull_policy: build
     container_name: ollametry
     restart: unless-stopped
     environment:
@@ -34,6 +37,8 @@ services:
     security_opt:
       - no-new-privileges:true
     mem_limit: ${OLLAMETRY_MEM_LIMIT:-256m}
+    pids_limit: 256
+    # OLLAMETRY_SHUTDOWN_TIMEOUT (30s) plus 5s for handlers and the final export.
     stop_grace_period: 40s
     logging:
       driver: json-file
