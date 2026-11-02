@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Windows support: `ollametry.exe` for `amd64` and `arm64` in reproducible `.zip` archives (`tools/mkzip`), attested and attached to releases, with Task Scheduler setup in `docs/install.md`. Unit and integration tests run natively on macOS and Windows in CI.
+- Hardened systemd unit for the Linux binary (`deploy/systemd/ollametry.service`, shipped in Linux archives; `systemd-analyze security` 1.2).
+- Multi-OS docs: README platforms table and native quick start; install steps per OS with PowerShell verification; client and port-swap instructions for macOS, Linux and Windows; per-OS development setup.
 - Release dry run: running the release workflow manually builds the image and the archives and renders the notes from `[Unreleased]`, publishing nothing, so a tag is not the pipeline's first test.
 - `docs/containers.md`: where Ollama should run given GPU access (on the host on macOS and on Windows without NVIDIA; in a container only with NVIDIA CUDA or AMD ROCm on Linux), Homebrew installs for macOS, and NVIDIA Container Toolkit setup for Linux and WSL 2 with a GPU-backed Ollama container that ollametry reaches by name.
 - OpenAPI 3.1 document for the admin listener (`api/openapi.yaml`: `/livez`, `/readyz`, `/metrics`), linted with Spectral (`make openapi-check`, in CI) and checked against the real handlers by `TestHandlerMatchesOpenAPI`.

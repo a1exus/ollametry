@@ -10,6 +10,10 @@
 
 ## Running with Docker Compose
 
+This page covers this repository's Docker Compose setup. Running the binary
+natively as a launchd, systemd or Task Scheduler service is covered in
+[install](install.md).
+
 ollametry runs as one Compose service, `ollametry`, defined in
 [`compose.yaml`](../compose.yaml). It joins the `grafana_default` network of
 `~/opt/grafana` to reach `otel-lgtm`, so start that stack first. Every

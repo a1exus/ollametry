@@ -19,6 +19,15 @@ Go and every linter run in pinned containers; the host needs only `docker`,
 `make`, `curl` and `bash`. Module, build and lint caches live in the Docker
 volumes `ollametry-gomod`, `ollametry-gobuild` and `ollametry-golangci`.
 
+| Develop on | Setup |
+|---|---|
+| macOS | Docker Desktop (or another Docker), plus `make` from the Xcode command-line tools |
+| Linux | [Docker Engine](https://docs.docker.com/engine/install/), `make` |
+| Windows | [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/tutorials/wsl-containers) with Docker Desktop or Docker Engine; run `make` in the WSL shell with the repository on the Linux file system |
+
+Without Docker, plain `go test -tags integration ./...` works on any OS with
+the Go version in `go.mod`; that is what CI runs on macOS and Windows.
+
 | Target | Does |
 |---|---|
 | `make check` | Lint, unit and integration tests, scans; run before every commit |
@@ -133,7 +142,7 @@ make benchstat                         # compares old.txt with bench.txt
 
 | Workflow | Runs on | Does |
 |---|---|---|
-| `ci.yml` | PRs, pushes to `main` | Parallel legs: lint and scan (`make ci-lint`, including `openapi-check`, `rules-check` and `notices-check`), unit tests (`make test-unit`), integration tests with coverage (`make cover`); multi-arch image build and a smoke test; dependency review on PRs |
+| `ci.yml` | PRs, pushes to `main` | Parallel legs: lint and scan (`make ci-lint`, including `openapi-check`, `rules-check` and `notices-check`), unit tests (`make test-unit`), integration tests with coverage (`make cover`); unit and integration tests natively on macOS and Windows (`go test`, no Docker on those runners); multi-arch image build and a smoke test; dependency review on PRs |
 | `fuzz.yml` | Nightly, manual | Each fuzz target for 10 minutes, failing inputs uploaded |
 | `codeql.yml` | PRs, `main`, weekly | CodeQL `security-and-quality` for Go |
 | `scorecard.yml` | `main`, weekly | OpenSSF Scorecard |
