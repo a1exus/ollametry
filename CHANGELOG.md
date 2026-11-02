@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `.bestpractices.json` with answers for the OpenSSF Best Practices passing criteria, which bestpractices.dev uses to pre-fill the project's form.
 - Windows support: `ollametry.exe` for `amd64` and `arm64` in reproducible `.zip` archives (`tools/mkzip`), attested and attached to releases, with Task Scheduler setup in `docs/install.md`. Unit and integration tests run natively on macOS and Windows in CI.
 - Hardened systemd unit for the Linux binary (`deploy/systemd/ollametry.service`, shipped in Linux archives; `systemd-analyze security` 1.2).
 - Multi-OS docs: README platforms table and native quick start; install steps per OS with PowerShell verification; client and port-swap instructions for macOS, Linux and Windows; per-OS development setup.
@@ -52,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `main` is protected by a ruleset: pull requests only, linear history with rebase merges, the branch up to date, and every required check green on Linux, macOS and Windows, with no bypass.
 - Dependabot also updates the Ollama and otel-lgtm images pinned in `test/e2e/compose.yaml`; `make versions-check` (in CI) fails when `go.mod`, the Makefile and the Dockerfile name different Go versions.
 - The proxy reuses its 32 KiB copy buffers instead of allocating one per request: 53 % less memory and 13 % less time per proxied request (benchstat, 8 runs, p=0.000).
 - Fuzzing no longer runs on pull requests: random exploration made an unrelated change fail when it found something, and `make test` already replays the corpus. CI legs are now lint and scan, unit tests, integration tests (with coverage) and E2E.
