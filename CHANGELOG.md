@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Dashboard: prompt processing p95 in the Latency row, and a collapsed "ollametry and Ollama" row with the Ollama version, in-flight HTTP requests, and the proxy's goroutines and memory.
+- Prometheus recording and alerting rules (`deploy/prometheus/ollametry-rules.yml`): Ollama down, ollametry absent, server error ratio, slow time to first token, model thrashing, models offloaded to CPU, cardinality overflow. Every alert has a promtool unit test; `make rules-check` runs them, in CI too.
 - Release binaries for macOS and Linux (`arm64`, `amd64`): reproducible archives with `SHA256SUMS`, built by `make dist` in the same pinned Go image as the container image, attested and attached to each GitHub release.
 - `ollametry version` (also `-version`, `--version`), falling back to the module version for `go install` builds.
 - macOS launchd agent (`deploy/launchd`) for running the binary next to the Ollama app, and an install guide (`docs/install.md`).

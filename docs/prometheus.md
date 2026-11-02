@@ -6,6 +6,7 @@
 - [Scraping it](#scraping-it)
 - [Running without otel-lgtm](#running-without-otel-lgtm)
 - [Same series as OTLP](#same-series-as-otlp)
+- [Alerting and recording rules](#alerting-and-recording-rules)
 - [Turning it off](#turning-it-off)
 
 Ollama has no metrics endpoint. ollametry gives it one: besides pushing OTLP
@@ -85,6 +86,36 @@ either source.
 | Resource | `job` = `service_name`, plus promoted resource labels | `target_info` series; `job` and `instance` from the scrape config |
 | Timing | Pushed every `OTEL_METRIC_EXPORT_INTERVAL` | Read at every scrape |
 | Stale series | Linger 5 minutes (no staleness markers) | Marked stale on the next scrape |
+
+## Alerting and recording rules
+
+[`deploy/prometheus/ollametry-rules.yml`](../deploy/prometheus/ollametry-rules.yml)
+works with series from either source. Load it from `prometheus.yml`:
+
+```yaml
+rule_files:
+  - /etc/prometheus/rules/ollametry-rules.yml
+```
+
+| Alert | Fires when | Severity |
+|---|---|---|
+| `OllamaDown` | ollametry has not reached Ollama for 2 minutes | critical |
+| `OllametryAbsent` | No `ollama_up` series for 10 minutes: ollametry, its exports or its scrapes are down | warning |
+| `OllamaHighErrorRate` | Over 5 % of a model's requests fail server-side for 10 minutes (4xx and client cancellations excluded) | warning |
+| `OllamaSlowTimeToFirstToken` | p95 time to first token over 10 s for 15 minutes | warning |
+| `OllamaModelThrashing` | A model is cold-loaded (load over 1 s) more than 6 times an hour | warning |
+| `OllamaModelOffloadedToCPU` | Over 10 % of a loaded model sits outside GPU memory for 10 minutes | warning |
+| `OllametryCardinalityOverflow` | Measurements fold into `otel_metric_overflow` series | warning |
+
+Recording rules precompute per-model request and error rates, the error
+ratio, p95 time to first token, output tokens per second and cold loads per
+hour (`gen_ai_request_model:*`). Thresholds are starting points for one local
+Ollama; tune them to your models and hardware.
+
+Every alert has a unit test in
+[`ollametry-rules.test.yml`](../deploy/prometheus/ollametry-rules.test.yml);
+`make rules-check` runs `promtool check rules` and `promtool test rules`, and
+CI runs it on every pull request.
 
 ## Turning it off
 

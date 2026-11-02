@@ -1,0 +1,115 @@
+# Prometheus recording and alerting rules for ollametry. They work on series
+# from either source: scraping /metrics or OTLP through otel-lgtm.
+#
+# Load with `rule_files:` in prometheus.yml. Thresholds are starting points
+# for a single local Ollama; tune them to your models and hardware. Unit
+# tests: ollametry-rules.test.yml (make rules-check).
+
+groups:
+  - name: ollametry.recording
+    rules:
+      - record: gen_ai_request_model:gen_ai_requests:rate5m
+        expr: sum by (gen_ai_request_model, gen_ai_operation_name) (rate(gen_ai_client_operation_duration_seconds_count[5m]))
+
+      # Server-side failures only: 4xx (bad requests, unknown models) and
+      # clients hanging up (canceled) are not Ollama's fault. Models with
+      # traffic but no failures get 0 rather than no series.
+      - record: gen_ai_request_model:gen_ai_errors:rate5m
+        expr: |
+          sum by (gen_ai_request_model, gen_ai_operation_name) (
+            rate(gen_ai_client_operation_duration_seconds_count{error_type!="", error_type!="canceled", error_type!~"4.."}[5m])
+          )
+            or
+          sum by (gen_ai_request_model, gen_ai_operation_name) (rate(gen_ai_client_operation_duration_seconds_count[5m])) * 0
+
+      - record: gen_ai_request_model:gen_ai_error_ratio:rate5m
+        expr: |
+          sum by (gen_ai_request_model) (gen_ai_request_model:gen_ai_errors:rate5m)
+            /
+          sum by (gen_ai_request_model) (gen_ai_request_model:gen_ai_requests:rate5m)
+
+      - record: gen_ai_request_model:gen_ai_time_to_first_token_seconds:p95_5m
+        expr: histogram_quantile(0.95, sum by (le, gen_ai_request_model) (rate(gen_ai_server_time_to_first_token_seconds_bucket[5m])))
+
+      - record: gen_ai_request_model:gen_ai_output_tokens:rate5m
+        expr: sum by (gen_ai_request_model) (rate(gen_ai_client_token_usage_sum{gen_ai_token_type="output"}[5m]))
+
+      # Loads over a second are cold starts from disk; warm requests report a
+      # load time of milliseconds.
+      - record: gen_ai_request_model:ollama_cold_loads:increase1h
+        expr: |
+          sum by (gen_ai_request_model) (
+            increase(ollama_model_load_duration_seconds_count[1h])
+              - ignoring (le)
+            increase(ollama_model_load_duration_seconds_bucket{le="1"}[1h])
+          )
+
+  - name: ollametry.alerts
+    rules:
+      - alert: OllamaDown
+        expr: max(ollama_up) == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Ollama is unreachable
+          description: ollametry has not reached Ollama's API for 2 minutes. Inference requests through the proxy fail with 502.
+
+      - alert: OllametryAbsent
+        expr: absent_over_time(ollama_up[5m])
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: No metrics from ollametry
+          description: No ollama_up series for 10 minutes. ollametry is down, or its exports or scrapes are failing.
+
+      - alert: OllamaHighErrorRate
+        expr: |
+          gen_ai_request_model:gen_ai_error_ratio:rate5m > 0.05
+            and
+          sum by (gen_ai_request_model) (gen_ai_request_model:gen_ai_requests:rate5m) > 0.01
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.gen_ai_request_model }}: {{ $value | humanizePercentage }} of requests fail"
+          description: More than 5% of requests to {{ $labels.gen_ai_request_model }} failed on the server side for 10 minutes (5xx, upstream errors, incomplete streams).
+
+      - alert: OllamaSlowTimeToFirstToken
+        expr: gen_ai_request_model:gen_ai_time_to_first_token_seconds:p95_5m > 10
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.gen_ai_request_model }}: p95 time to first token {{ $value | humanizeDuration }}"
+          description: Streamed responses from {{ $labels.gen_ai_request_model }} take over 10 seconds to start. Check queueing, model loads and prompt sizes.
+
+      - alert: OllamaModelThrashing
+        expr: gen_ai_request_model:ollama_cold_loads:increase1h > 6
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.gen_ai_request_model }} cold-loaded {{ $value | humanize }} times in an hour"
+          description: The model keeps being unloaded and loaded again. Raise keep_alive or OLLAMA_MAX_LOADED_MODELS, or free memory.
+
+      - alert: OllamaModelOffloadedToCPU
+        expr: |
+          (max by (ollama_model_name) (ollama_model_memory_size_bytes) - max by (ollama_model_name) (ollama_model_memory_vram_size_bytes))
+            / max by (ollama_model_name) (ollama_model_memory_size_bytes) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.ollama_model_name }}: {{ $value | humanizePercentage }} runs outside GPU memory"
+          description: Part of the model does not fit in GPU memory and runs on the CPU, which is much slower. Use a smaller model or quantization, or fewer loaded models.
+
+      - alert: OllametryCardinalityOverflow
+        expr: count({otel_metric_overflow="true"}) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: ollametry metrics hit the cardinality limit
+          description: Some measurements are folded into otel_metric_overflow series. Raise OLLAMETRY_CARDINALITY_LIMIT or find the source of new attribute values.

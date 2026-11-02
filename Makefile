@@ -19,6 +19,7 @@ GOVULN_VERSION   ?= v1.9.0
 ACTIONLINT_VERSION ?= 1.7.12
 ZIZMOR_VERSION   ?= 1.30.1
 JQ_VERSION       ?= 1.8.1
+PROMETHEUS_VERSION ?= v3.15.1
 GOLICENSES_VERSION ?= v2.0.1
 VERSION          ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
@@ -117,6 +118,13 @@ tidy: ## Tidy go.mod and go.sum
 tidy-check: tidy ## Fail if go.mod or go.sum are not tidy
 	@git diff --exit-code -- go.mod go.sum || { echo 'tidy-check: run make tidy and commit the result' >&2; exit 1; }
 
+.PHONY: rules-check
+rules-check: ## Validate and unit-test the Prometheus rules (promtool)
+	docker run --rm -v "$(CURDIR)/deploy/prometheus":/rules:ro -w /rules --entrypoint promtool \
+		prom/prometheus:$(PROMETHEUS_VERSION) check rules ollametry-rules.yml
+	docker run --rm -v "$(CURDIR)/deploy/prometheus":/rules:ro -w /rules --entrypoint promtool \
+		prom/prometheus:$(PROMETHEUS_VERSION) test rules ollametry-rules.test.yml
+
 .PHONY: dashboard-check
 dashboard-check: ## Validate the Grafana dashboard JSON
 	@for f in deploy/grafana/*.json; do \
@@ -150,10 +158,10 @@ notices-check: notices ## Fail if THIRD_PARTY_NOTICES.md misses a dependency
 	@git diff --exit-code -- THIRD_PARTY_NOTICES.md || { echo 'notices-check: run make notices and commit the result' >&2; exit 1; }
 
 .PHONY: ci-lint
-ci-lint: tidy-check lint vuln lint-ci dashboard-check notices-check ## CI lint leg: tidy, lint, vuln, workflows, dashboard, notices
+ci-lint: tidy-check lint vuln lint-ci dashboard-check rules-check notices-check ## CI lint leg: tidy, lint, vuln, workflows, dashboard, rules, notices
 
 .PHONY: check
-check: lint lint-ci dashboard-check test vuln ## Lint code, workflows and dashboard, test and scan (run before every commit)
+check: lint lint-ci dashboard-check rules-check test vuln ## Lint code, workflows and dashboard, test and scan (run before every commit)
 
 ##@ Lifecycle (docker compose)
 

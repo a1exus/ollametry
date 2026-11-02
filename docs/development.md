@@ -31,6 +31,7 @@ volumes `ollametry-gomod`, `ollametry-gobuild` and `ollametry-golangci`.
 | `make tidy` / `make tidy-check` | Tidy `go.mod`; fail if it is not tidy |
 | `make lint-ci` | actionlint and zizmor on `.github/workflows` |
 | `make dashboard-check` | Validate the Grafana dashboard JSON |
+| `make rules-check` | `promtool check rules` and `promtool test rules` on [`deploy/prometheus`](../deploy/prometheus) |
 | `make notices` / `make notices-check` | Regenerate the Go module table in [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md); fail if it misses a dependency |
 | `make fuzz` | Fuzz the parsers (`FUZZTIME=30s` per target) |
 | `make dist` | Reproducible release archives and `SHA256SUMS` in `dist/` (`VERSION=vX.Y.Z`) |
@@ -97,7 +98,7 @@ commit it with the fix so `make test` replays it from then on.
 
 | Workflow | Runs on | Does |
 |---|---|---|
-| `ci.yml` | PRs, pushes to `main` | Parallel legs: lint and scan (`make ci-lint`, including `notices-check`), unit tests (`make test-unit`), integration tests with coverage (`make cover`); multi-arch image build and a smoke test; dependency review on PRs |
+| `ci.yml` | PRs, pushes to `main` | Parallel legs: lint and scan (`make ci-lint`, including `rules-check` and `notices-check`), unit tests (`make test-unit`), integration tests with coverage (`make cover`); multi-arch image build and a smoke test; dependency review on PRs |
 | `fuzz.yml` | Nightly, manual | Each fuzz target for 10 minutes, failing inputs uploaded |
 | `codeql.yml` | PRs, `main`, weekly | CodeQL `security-and-quality` for Go |
 | `scorecard.yml` | `main`, weekly | OpenSSF Scorecard |
