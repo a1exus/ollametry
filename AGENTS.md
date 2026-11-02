@@ -1,5 +1,7 @@
 # AGENTS.md
 
+<!-- markdownlint-disable MD013 -- one rule per line, unwrapped, for agents and diffs -->
+
 Operating rules for AI agents working in this repo. Architecture details and rationale live in [`CLAUDE.md`](CLAUDE.md); user-facing docs are [`README.md`](README.md) and [`docs/`](docs/).
 
 ## Security and privacy
@@ -11,7 +13,7 @@ Operating rules for AI agents working in this repo. Architecture details and rat
 ## Off-limits
 
 | Path / action | Reason |
-|---|---|
+| --- | --- |
 | `.env` | User-owned local config |
 | `~/opt/grafana`, `~/opt/traefik` | Separate repos with their own AGENTS.md; change them only on explicit request. Dashboard JSON lives here and `~/opt/grafana` pulls it (`make dashboards`) |
 | The host Ollama configuration (`launchctl setenv`, restarting the app) | Changes how every client reaches Ollama; only on explicit request |
@@ -35,7 +37,7 @@ Operating rules for AI agents working in this repo. Architecture details and rat
 ## Verification (run after every change)
 
 ```sh
-make check          # golangci-lint, actionlint + zizmor, OpenAPI, dashboard and rule checks, go test -race, govulncheck
+make check          # golangci-lint, actionlint + zizmor, OpenAPI, docs, dashboard and rule checks, go test -race, govulncheck
 make up             # waits for the container healthcheck
 make health
 make smoke MODEL=<an installed model>

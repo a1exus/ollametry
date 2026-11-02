@@ -23,7 +23,7 @@ image. The image carries this file and [`LICENSE`](LICENSE) in
 ### Go standard library and runtime
 
 | Component | License |
-|---|---|
+| --- | --- |
 | [Go](https://go.dev) standard library and runtime | [BSD-3-Clause](https://go.dev/LICENSE) |
 
 ### Go modules
@@ -36,7 +36,7 @@ this table misses a dependency.
 
 <!-- BEGIN go-licenses -->
 | Package | License |
-|---|---|
+| --- | --- |
 | [`github.com/beorn7/perks/quantile`](https://pkg.go.dev/github.com/beorn7/perks/quantile?tab=licenses) | MIT |
 | [`github.com/cenkalti/backoff/v5`](https://pkg.go.dev/github.com/cenkalti/backoff/v5?tab=licenses) | MIT |
 | [`github.com/cespare/xxhash/v2`](https://pkg.go.dev/github.com/cespare/xxhash/v2?tab=licenses) | MIT |
@@ -86,7 +86,7 @@ this table misses a dependency.
 ### Container base image
 
 | Component | License |
-|---|---|
+| --- | --- |
 | [distroless `static-debian13`](https://github.com/GoogleContainerTools/distroless) | [Apache-2.0](https://github.com/GoogleContainerTools/distroless/blob/main/LICENSE) |
 
 The base image contains the Debian packages `base-files`, `ca-certificates`,
@@ -101,7 +101,7 @@ of the binary or the image.
 ### Services ollametry works with
 
 | Project | License | Role |
-|---|---|---|
+| --- | --- | --- |
 | [Ollama](https://github.com/ollama/ollama) | [MIT](https://github.com/ollama/ollama/blob/main/LICENSE) | The server ollametry proxies |
 | [grafana/otel-lgtm](https://github.com/grafana/docker-otel-lgtm) | [Apache-2.0](https://github.com/grafana/docker-otel-lgtm/blob/main/LICENSE) | OpenTelemetry backend that receives the metrics |
 | [Prometheus](https://github.com/prometheus/prometheus) | [Apache-2.0](https://github.com/prometheus/prometheus/blob/main/LICENSE) | Metric storage inside otel-lgtm |
@@ -110,7 +110,7 @@ of the binary or the image.
 ### Specifications
 
 | Specification | License | Role |
-|---|---|---|
+| --- | --- | --- |
 | [OpenTelemetry semantic conventions](https://github.com/open-telemetry/semantic-conventions) | [Apache-2.0](https://github.com/open-telemetry/semantic-conventions/blob/main/LICENSE) | Metric and attribute names (`gen_ai.*`, `http.server.*`) |
 
 ### Build and development tools
@@ -119,7 +119,7 @@ These run in their own containers or processes and are not linked into
 ollametry.
 
 | Tool | License | Role |
-|---|---|---|
+| --- | --- | --- |
 | [Go toolchain](https://github.com/golang/go) and the [`golang` image](https://github.com/docker-library/golang) | [BSD-3-Clause](https://go.dev/LICENSE) | Build and tests |
 | [golangci-lint](https://github.com/golangci/golangci-lint) | [GPL-3.0](https://github.com/golangci/golangci-lint/blob/main/LICENSE) | Linting |
 | [govulncheck](https://github.com/golang/vuln) | [BSD-3-Clause](https://github.com/golang/vuln/blob/master/LICENSE) | Vulnerability scanning |
@@ -129,13 +129,15 @@ ollametry.
 | [jq](https://github.com/jqlang/jq) | [MIT](https://github.com/jqlang/jq/blob/master/COPYING) (documentation CC BY 3.0) | Dashboard validation |
 | [promtool](https://github.com/prometheus/prometheus) (`prom/prometheus` image) | [Apache-2.0](https://github.com/prometheus/prometheus/blob/main/LICENSE) | Validating and unit-testing the Prometheus rules |
 | [Spectral](https://github.com/stoplightio/spectral) (`stoplight/spectral` image) | [Apache-2.0](https://github.com/stoplightio/spectral/blob/develop/LICENSE) | Linting the OpenAPI document |
+| [markdownlint-cli2](https://github.com/DavidAnson/markdownlint-cli2) | [MIT](https://github.com/DavidAnson/markdownlint-cli2/blob/main/LICENSE) | Linting the Markdown documentation |
+| [lychee](https://github.com/lycheeverse/lychee) | [Apache-2.0](https://github.com/lycheeverse/lychee/blob/master/LICENSE-APACHE) or [MIT](https://github.com/lycheeverse/lychee/blob/master/LICENSE-MIT) | Checking documentation links and anchors (offline) |
 | [Docker Compose](https://github.com/docker/compose) | [Apache-2.0](https://github.com/docker/compose/blob/main/LICENSE) | Running the service |
 
 ### GitHub Actions
 
 | Action | License |
-|---|---|
-| [actions/checkout](https://github.com/actions/checkout), [actions/cache](https://github.com/actions/cache), [actions/upload-artifact](https://github.com/actions/upload-artifact), [actions/dependency-review-action](https://github.com/actions/dependency-review-action), [actions/attest-build-provenance](https://github.com/actions/attest-build-provenance) | MIT |
+| --- | --- |
+| [actions/checkout](https://github.com/actions/checkout), [actions/cache](https://github.com/actions/cache), [actions/upload-artifact](https://github.com/actions/upload-artifact), [actions/download-artifact](https://github.com/actions/download-artifact), [actions/setup-go](https://github.com/actions/setup-go), [actions/dependency-review-action](https://github.com/actions/dependency-review-action), [actions/attest-build-provenance](https://github.com/actions/attest-build-provenance) | MIT |
 | [github/codeql-action](https://github.com/github/codeql-action) | MIT |
 | [docker/setup-buildx-action](https://github.com/docker/setup-buildx-action), [docker/login-action](https://github.com/docker/login-action), [docker/metadata-action](https://github.com/docker/metadata-action), [docker/build-push-action](https://github.com/docker/build-push-action) | Apache-2.0 |
 | [ossf/scorecard-action](https://github.com/ossf/scorecard-action) | Apache-2.0 |

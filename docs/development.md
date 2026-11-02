@@ -20,7 +20,7 @@ Go and every linter run in pinned containers; the host needs only `docker`,
 volumes `ollametry-gomod`, `ollametry-gobuild` and `ollametry-golangci`.
 
 | Develop on | Setup |
-|---|---|
+| --- | --- |
 | macOS | Docker Desktop (or another Docker), plus `make` from the Xcode command-line tools |
 | Linux | [Docker Engine](https://docs.docker.com/engine/install/), `make` |
 | Windows | [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/tutorials/wsl-containers) with Docker Desktop or Docker Engine; run `make` in the WSL shell with the repository on the Linux file system |
@@ -29,7 +29,7 @@ Without Docker, plain `go test -tags integration ./...` works on any OS with
 the Go version in `go.mod`; that is what CI runs on macOS and Windows.
 
 | Target | Does |
-|---|---|
+| --- | --- |
 | `make check` | Lint, unit and integration tests, scans; run before every commit |
 | `make test` | Unit and integration tests (`go test -race -tags integration`) |
 | `make test-unit` / `make test-integration` | One layer at a time |
@@ -42,6 +42,7 @@ the Go version in `go.mod`; that is what CI runs on macOS and Windows.
 | `make versions-check` | Fail if `go.mod`, the Makefile and the Dockerfile name different Go versions |
 | `make lint-ci` | actionlint and zizmor on `.github/workflows` |
 | `make openapi-check` | Spectral lint of [`api/openapi.yaml`](../api/openapi.yaml); `TestHandlerMatchesOpenAPI` checks it against the real handlers |
+| `make docs-check` | markdownlint ([`.markdownlint-cli2.yaml`](../.markdownlint-cli2.yaml)) and an offline check of every relative link and anchor (lychee) |
 | `make dashboard-check` | Validate the Grafana dashboard JSON |
 | `make rules-check` | `promtool check rules` and `promtool test rules` on [`deploy/prometheus`](../deploy/prometheus) |
 | `make notices` / `make notices-check` | Regenerate the Go module table in [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md); fail if it misses a dependency |
@@ -57,7 +58,7 @@ Tool versions are Makefile variables (`GO_VERSION`, `GOLANGCI_VERSION`, ...).
 Three layers, from fast and isolated to slow and real:
 
 | Layer | Scope | Where | Run with |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **Unit** | One function or package: decoders, framer, routes, config, meter provider, poller state, model extraction | `*_test.go`, no build tag | `make test-unit` (seconds) |
 | **Integration** | Several modules over real HTTP with fake externals: the proxy between a client and a fake Ollama; the poller against a fake Ollama; the whole binary (`run()`) exporting OTLP/HTTP to a fake collector that decodes the protobuf | `*_integration_test.go`, `//go:build integration` | `make test-integration` (seconds) |
 | **End-to-end** | The deployed system from a client's side: requests through the ollametry container to a real Ollama in every API family, then the resulting series in otel-lgtm's Prometheus | `test/e2e`, `//go:build e2e` | `make e2e` or `make e2e-hermetic` (minutes) |
@@ -87,7 +88,7 @@ Three layers, from fast and isolated to slow and real:
 ## Fuzzing
 
 | Target | Checks |
-|---|---|
+| --- | --- |
 | `FuzzFramer` | Framing is identical whether a body arrives whole, split, or byte by byte; no document exceeds the size limit |
 | `FuzzDecoders` | No input panics a decoder; `error.type` stays bounded |
 | `FuzzModelFromPrefix` | The truncated-body model walk agrees with `encoding/json` on every valid body |
@@ -115,7 +116,7 @@ through the whole proxy from memory; `BenchmarkBaseline` relays the same
 bytes without ollametry.
 
 | Response | Through ollametry | Plain relay | Added |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Native chat, streamed (13 records) | 39.5 µs, 30.1 KiB | 2.0 µs, 7.9 KiB | 37 µs, 22 KiB |
 | Native chat, single JSON | 24.2 µs, 24.7 KiB | 1.6 µs, 6.2 KiB | 23 µs, 18 KiB |
 | OpenAI chat, streamed | 46.1 µs, 30.6 KiB | 2.3 µs, 9.3 KiB | 44 µs, 21 KiB |
@@ -141,8 +142,8 @@ make benchstat                         # compares old.txt with bench.txt
 ## Continuous integration
 
 | Workflow | Runs on | Does |
-|---|---|---|
-| `ci.yml` | PRs, pushes to `main` | Parallel legs: lint and scan (`make ci-lint`, including `openapi-check`, `rules-check` and `notices-check`), unit tests (`make test-unit`), integration tests with coverage (`make cover`); unit and integration tests natively on macOS and Windows (`go test`, no Docker on those runners); multi-arch image build and a smoke test; dependency review on PRs |
+| --- | --- | --- |
+| `ci.yml` | PRs, pushes to `main` | Parallel legs: lint and scan (`make ci-lint`, including `openapi-check`, `docs-check`, `rules-check` and `notices-check`), unit tests (`make test-unit`), integration tests with coverage (`make cover`); unit and integration tests natively on macOS and Windows (`go test`, no Docker on those runners); multi-arch image build and a smoke test; dependency review on PRs |
 | `fuzz.yml` | Nightly, manual | Each fuzz target for 10 minutes, failing inputs uploaded |
 | `codeql.yml` | PRs, `main`, weekly | CodeQL `security-and-quality` for Go |
 | `scorecard.yml` | `main`, weekly | OpenSSF Scorecard |

@@ -53,7 +53,7 @@ port and put the proxy on 11434. This changes your Ollama setup, so it is not
 done for you. First move Ollama to `127.0.0.1:11433`, then restart it:
 
 | OS | Move Ollama | Undo |
-|---|---|---|
+| --- | --- | --- |
 | macOS (Ollama app) | `launchctl setenv OLLAMA_HOST 127.0.0.1:11433`, then quit and reopen the app | `launchctl unsetenv OLLAMA_HOST` |
 | Linux (`ollama.service`) | `sudo systemctl edit ollama`, add `Environment="OLLAMA_HOST=127.0.0.1:11433"` under `[Service]`, `sudo systemctl restart ollama` | remove the line, restart |
 | Windows (Ollama app) | `[Environment]::SetEnvironmentVariable("OLLAMA_HOST", "127.0.0.1:11433", "User")`, then quit Ollama from the tray and reopen it | set it to `$null`, restart Ollama |
@@ -61,7 +61,7 @@ done for you. First move Ollama to `127.0.0.1:11433`, then restart it:
 Then put ollametry on 11434:
 
 | ollametry runs as | Setting |
-|---|---|
+| --- | --- |
 | Docker Compose | `PROXY_PORT=11434 OLLAMA_UPSTREAM=http://host.docker.internal:11433 make up` |
 | Binary | `ollametry -listen 127.0.0.1:11434 -ollama-url http://127.0.0.1:11433` |
 | launchd, systemd, Task Scheduler | the same two settings as `OLLAMETRY_LISTEN_ADDR` and `OLLAMETRY_OLLAMA_URL` ([install](install.md)) |

@@ -20,7 +20,7 @@ ollametry runs as one Compose service, `ollametry`, defined in
 lifecycle target is a thin wrapper around `docker compose`:
 
 | Target | Runs | Use it to |
-|---|---|---|
+| --- | --- | --- |
 | `make up` | `docker compose up -d --build --wait` | Build if needed, start, wait until healthy |
 | `make down` | `docker compose down --remove-orphans` | Stop and remove the container and network |
 | `make start` / `make stop` | `docker compose start` / `stop` | Pause and resume without removing the container |
@@ -45,7 +45,7 @@ The admin endpoints are specified in [`api/openapi.yaml`](../api/openapi.yaml)
 (OpenAPI 3.1); a contract test keeps it in step with the handlers.
 
 | Endpoint | URL |
-|---|---|
+| --- | --- |
 | Proxy (use instead of Ollama) | `http://127.0.0.1:11435` |
 | Liveness | `http://127.0.0.1:11436/livez`: the process serves requests |
 | Readiness | `http://127.0.0.1:11436/readyz`: the last poll reached Ollama within three intervals |

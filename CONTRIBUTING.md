@@ -16,7 +16,7 @@ Only `docker`, `make`, `curl` and `bash` are needed on the host; Go and the
 linters run in pinned containers.
 
 ```sh
-make check   # golangci-lint, workflow lint, OpenAPI, dashboard and rule checks, tests, govulncheck
+make check   # golangci-lint, workflow lint, OpenAPI, docs, dashboard and rule checks, tests, govulncheck
 make fuzz    # fuzz the parsers (FUZZTIME=30s per target)
 make up      # run against a local Ollama (needs ~/opt/grafana's network, see docs/operations.md)
 make smoke MODEL=<an installed model>
@@ -37,8 +37,8 @@ decoders handle. Both apply to human contributors too.
   result in Prometheus changes. New response shapes get a fixture recorded from
   a real Ollama in `internal/dialect/testdata` (cap the output with
   `num_predict` or `max_tokens` so fixtures stay small).
-- A new dependency needs `make notices`; a new tool, service or action needs a row in
-  [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+- A new dependency needs `make notices`; a new tool, service or action needs a
+  row in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 - Add a line to `CHANGELOG.md` under `## [Unreleased]`
   ([Keep a Changelog](https://keepachangelog.com/en/1.1.0/)).
 - Changing a metric name or attribute is a breaking change: update the
@@ -53,7 +53,7 @@ decoders handle. Both apply to human contributors too.
 
 Maintainers move the `Unreleased` entries under a new version heading in
 `CHANGELOG.md`, then push a tag `vX.Y.Z`. The release workflow publishes the
-multi-arch image to `ghcr.io/a1exus/ollametry` with SBOM and provenance, builds the binary
-archives for macOS, Linux and Windows, and creates the GitHub release from
-that changelog section with the archives attached. Run a
+multi-arch image to `ghcr.io/a1exus/ollametry` with SBOM and provenance,
+builds the binary archives for macOS, Linux and Windows, and creates the
+GitHub release from that changelog section with the archives attached. Run a
 [dry run](docs/releases.md#publishing) first.

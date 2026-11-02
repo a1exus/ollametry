@@ -27,7 +27,7 @@ only.
 ## Metric reference
 
 | Metric | Type | What |
-|---|---|---|
+| --- | --- | --- |
 | `gen_ai.client.operation.duration` | histogram, s | Whole inference request at the proxy; `error.type` on failures |
 | `gen_ai.client.token.usage` | histogram, `{token}` | Input and output tokens per request (`gen_ai.token.type`); embeddings have input only |
 | `gen_ai.server.time_to_first_token` | histogram, s | Streamed responses: request to first generated token, reasoning included |
