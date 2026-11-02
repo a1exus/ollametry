@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Three test layers: unit (no build tag), integration (`-tags integration`: the proxy and poller against a fake Ollama, and the whole binary exporting OTLP/HTTP to a fake collector) and end-to-end (`test/e2e`, `-tags e2e`: requests through the container to a real Ollama in every API family, checked in otel-lgtm's Prometheus). `make test-unit`, `make test-integration`, `make e2e` (running stack), `make e2e-hermetic` (throwaway stack from `test/e2e/compose.yaml`, run in CI).
+- Nightly fuzzing workflow (`fuzz.yml`), 10 minutes per target in parallel, uploading failing inputs.
 - `ollama.build.info` gauge carrying `ollama.version`; `ollama.up` no longer has attributes, so up and down are one series.
 
 - Transparent reverse proxy for Ollama (`ollametry`) that relays requests and streams unchanged, flushes every write, and cancels the upstream request when the client hangs up.
@@ -35,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Fuzzing no longer runs on pull requests: random exploration made an unrelated change fail when it found something, and `make test` already replays the corpus. CI legs are now lint and scan, unit tests, integration tests (with coverage) and E2E.
 - `docker-compose.yml` renamed to `compose.yaml`; the service is never pulled (`pull_policy: build`) and is limited to 256 processes.
 - Makefile lifecycle targets wrap `docker compose` one to one: `up` (`up -d --build --wait`), `down`, `start`, `stop`, `restart`, `build`, `rebuild`, `clean`, `ps` (`--all`), `logs` (`--follow`, `TAIL`), `top`, `images`.
 - Dockerfile fails on any build-check warning (`# check=error=true`) and copies the binary with `COPY --link`.

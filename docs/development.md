@@ -3,7 +3,7 @@
 [← README](../README.md)
 
 - [Toolchain](#toolchain)
-- [Tests](#tests)
+- [Testing](#testing)
 - [Fuzzing](#fuzzing)
 - [Continuous integration](#continuous-integration)
 
@@ -20,9 +20,11 @@ volumes `ollametry-gomod`, `ollametry-gobuild` and `ollametry-golangci`.
 
 | Target | Does |
 |---|---|
-| `make check` | Everything below except fuzzing; run before every commit |
-| `make test` | `go test -race` |
-| `make cover` | Tests with a per-function coverage summary |
+| `make check` | Lint, unit and integration tests, scans; run before every commit |
+| `make test` | Unit and integration tests (`go test -race -tags integration`) |
+| `make test-unit` / `make test-integration` | One layer at a time |
+| `make cover` | Unit and integration tests with a per-function coverage summary |
+| `make e2e` / `make e2e-hermetic` | End-to-end tests (see [Testing](#testing)) |
 | `make lint` | golangci-lint ([`.golangci.yml`](../.golangci.yml)) |
 | `make fmt` | gofmt and goimports |
 | `make vuln` | govulncheck on dependencies and the standard library |
@@ -34,15 +36,31 @@ volumes `ollametry-gomod`, `ollametry-gobuild` and `ollametry-golangci`.
 Tool versions are Makefile variables (`GO_VERSION`, `GOLANGCI_VERSION`, ...).
 `make help` lists every target.
 
-## Tests
+## Testing
 
-- **Decoders** replay responses recorded from Ollama 0.40.13 in
-  `internal/dialect/testdata`. New response shapes get a recorded fixture; cap
+Three layers, from fast and isolated to slow and real:
+
+| Layer | Scope | Where | Run with |
+|---|---|---|---|
+| **Unit** | One function or package: decoders, framer, routes, config, meter provider, poller state, model extraction | `*_test.go`, no build tag | `make test-unit` (seconds) |
+| **Integration** | Several modules over real HTTP with fake externals: the proxy between a client and a fake Ollama; the poller against a fake Ollama; the whole binary (`run()`) exporting OTLP/HTTP to a fake collector that decodes the protobuf | `*_integration_test.go`, `//go:build integration` | `make test-integration` (seconds) |
+| **End-to-end** | The deployed system from a client's side: requests through the ollametry container to a real Ollama in every API family, then the resulting series in otel-lgtm's Prometheus | `test/e2e`, `//go:build e2e` | `make e2e` or `make e2e-hermetic` (minutes) |
+
+- **Fakes replay real responses.** Decoder, proxy and binary tests use
+  responses recorded from Ollama 0.40.13 in `internal/dialect/testdata` and
+  `internal/ollama/testdata`. New response shapes get a recorded fixture; cap
   the output with `num_predict` or `max_tokens` so fixtures stay small.
-- **Proxy tests** run the real proxy between an HTTP client and a fake Ollama
-  and read metrics from an in-memory reader.
-- **Telemetry tests** check the bucket views, resource and cardinality limit
-  of the real meter provider.
+- **`make e2e`** runs against your running stack (`make up`, the host
+  Ollama, `~/opt/grafana`) with `E2E_MODEL` (default `granite4.2:8b`). The
+  runner joins the `grafana_default` network to reach Prometheus.
+- **`make e2e-hermetic`** brings up a throwaway stack from
+  [`test/e2e/compose.yaml`](../test/e2e/compose.yaml): Ollama with
+  `smollm2:135m`, otel-lgtm, and ollametry built from the checkout. It tears
+  the stack down afterwards and prints ollametry's logs on failure. CI runs
+  this.
+- E2E tests compare series one by one, never summed, and wait for exports
+  instead of reading once: series from a replaced container linger for 5
+  minutes, and metrics arrive on the export interval.
 
 ## Fuzzing
 
@@ -57,6 +75,13 @@ make fuzz                 # 30s per target
 make fuzz FUZZTIME=10m    # a longer campaign
 ```
 
+Fuzzing is not a pull request gate: it explores random inputs, so a find would
+fail an unrelated change. Pull requests replay the seed corpus and every saved
+failure through `make test`, deterministically. The nightly
+[`fuzz.yml`](../.github/workflows/fuzz.yml) workflow fuzzes each target for
+10 minutes in parallel (longer from *Run workflow*) and uploads failing inputs
+as an artifact.
+
 A failure writes the input to `testdata/fuzz/<Target>/` in the package;
 commit it with the fix so `make test` replays it from then on.
 
@@ -64,7 +89,8 @@ commit it with the fix so `make test` replays it from then on.
 
 | Workflow | Runs on | Does |
 |---|---|---|
-| `ci.yml` | PRs, pushes to `main` | Three parallel legs: lint and scan (`make ci-lint`), test (`make cover`), fuzz (20s per target); multi-arch image build and a smoke test without Ollama; dependency review on PRs |
+| `ci.yml` | PRs, pushes to `main` | Parallel legs: lint and scan (`make ci-lint`), unit tests (`make test-unit`), integration tests with coverage (`make cover`); E2E on a throwaway stack (`make e2e-hermetic`); multi-arch image build and a smoke test; dependency review on PRs |
+| `fuzz.yml` | Nightly, manual | Each fuzz target for 10 minutes, failing inputs uploaded |
 | `codeql.yml` | PRs, `main`, weekly | CodeQL `security-and-quality` for Go |
 | `scorecard.yml` | `main`, weekly | OpenSSF Scorecard |
 | `release.yml` | tags `vX.Y.Z` | See [releases](releases.md) |
