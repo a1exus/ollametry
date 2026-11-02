@@ -21,6 +21,10 @@ ZIZMOR_VERSION   ?= 1.30.1
 JQ_VERSION       ?= 1.8.1
 PROMETHEUS_VERSION ?= v3.15.1
 GOLICENSES_VERSION ?= v2.0.1
+BENCHSTAT_VERSION  ?= v0.0.0-20251208221838-04cf7a2dca90
+BENCH_COUNT        ?= 6
+OLD                ?= old.txt
+NEW                ?= bench.txt
 VERSION          ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
 # Toolchains run in containers. Caches are named volumes; CI sets them to
@@ -54,8 +58,16 @@ test: ## Run unit and integration tests (hermetic) with the race detector
 	$(GO) test -race -count=1 -tags integration ./...
 
 .PHONY: test-unit
-test-unit: ## Run unit tests only
-	$(GO) test -race -count=1 ./...
+test-unit: ## Run unit tests, and every benchmark once so they keep working
+	$(GO) test -race -count=1 -bench . -benchtime 1x ./...
+
+.PHONY: bench
+bench: ## Run benchmarks (BENCH_COUNT=6 runs each) into bench.txt
+	$(GO) test -run '^$$' -bench . -benchmem -count=$(BENCH_COUNT) ./... | tee bench.txt
+
+.PHONY: benchstat
+benchstat: ## Compare two benchmark runs: make benchstat OLD=old.txt NEW=bench.txt
+	$(GO) run golang.org/x/perf/cmd/benchstat@$(BENCHSTAT_VERSION) $(OLD) $(NEW)
 
 .PHONY: test-integration
 test-integration: ## Run integration tests (also compiles in the unit tests)

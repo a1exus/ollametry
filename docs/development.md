@@ -5,6 +5,7 @@
 - [Toolchain](#toolchain)
 - [Testing](#testing)
 - [Fuzzing](#fuzzing)
+- [Performance](#performance)
 - [Continuous integration](#continuous-integration)
 
 [`CLAUDE.md`](../CLAUDE.md) describes the architecture and the API quirks the
@@ -35,6 +36,7 @@ volumes `ollametry-gomod`, `ollametry-gobuild` and `ollametry-golangci`.
 | `make rules-check` | `promtool check rules` and `promtool test rules` on [`deploy/prometheus`](../deploy/prometheus) |
 | `make notices` / `make notices-check` | Regenerate the Go module table in [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md); fail if it misses a dependency |
 | `make fuzz` | Fuzz the parsers (`FUZZTIME=30s` per target) |
+| `make bench` / `make benchstat` | Benchmarks into `bench.txt`; compare two runs (see [Performance](#performance)) |
 | `make dist` | Reproducible release archives and `SHA256SUMS` in `dist/` (`VERSION=vX.Y.Z`) |
 
 Tool versions are Makefile variables (`GO_VERSION`, `GOLANGCI_VERSION`, ...).
@@ -94,6 +96,37 @@ as an artifact.
 
 A failure writes the input to `testdata/fuzz/<Target>/` in the package;
 commit it with the fix so `make test` replays it from then on.
+
+## Performance
+
+What ollametry adds to each request, from `make bench` on an Apple M2
+(Docker Desktop, linux/arm64). `BenchmarkProxy` sends a recorded response
+through the whole proxy from memory; `BenchmarkBaseline` relays the same
+bytes without ollametry.
+
+| Response | Through ollametry | Plain relay | Added |
+|---|---|---|---|
+| Native chat, streamed (13 records) | 39.5 µs, 30.1 KiB | 2.0 µs, 7.9 KiB | 37 µs, 22 KiB |
+| Native chat, single JSON | 24.2 µs, 24.7 KiB | 1.6 µs, 6.2 KiB | 23 µs, 18 KiB |
+| OpenAI chat, streamed | 46.1 µs, 30.6 KiB | 2.3 µs, 9.3 KiB | 44 µs, 21 KiB |
+| Anthropic messages, streamed | 38.0 µs, 26.7 KiB | 2.0 µs, 8.1 KiB | 36 µs, 19 KiB |
+
+Against model latencies of hundreds of milliseconds to minutes, that is far
+below 0.1 %. Most of it is the fixed cost of recording the metrics; each
+streamed record adds about 2 allocations (decoding its JSON).
+`TestProxyAllocationsPerRecord` fails if that grows by one, which is the
+regression that would scale with long generations; timings are too noisy on
+shared CI runners to gate on.
+
+To measure a change:
+
+```sh
+make bench && mv bench.txt old.txt    # on the base commit
+make bench                             # on your change
+make benchstat                         # compares old.txt with bench.txt
+```
+
+`make test-unit` (and CI) runs every benchmark once, so they keep working.
 
 ## Continuous integration
 

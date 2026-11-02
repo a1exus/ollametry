@@ -36,3 +36,7 @@ go.work.sum
 
 # Release archives (make dist)
 /dist/
+
+# Benchmark results (make bench)
+/bench.txt
+/old.txt

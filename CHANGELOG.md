@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Benchmarks for the framer, decoders and the whole proxy against a plain relay (`make bench`, `make benchstat`); per-request overhead is documented in `docs/development.md#performance`. `TestProxyAllocationsPerRecord` fails if each streamed record allocates more.
 - Dashboard: prompt processing p95 in the Latency row, and a collapsed "ollametry and Ollama" row with the Ollama version, in-flight HTTP requests, and the proxy's goroutines and memory.
 - Prometheus recording and alerting rules (`deploy/prometheus/ollametry-rules.yml`): Ollama down, ollametry absent, server error ratio, slow time to first token, model thrashing, models offloaded to CPU, cardinality overflow. Every alert has a promtool unit test; `make rules-check` runs them, in CI too.
 - Release binaries for macOS and Linux (`arm64`, `amd64`): reproducible archives with `SHA256SUMS`, built by `make dist` in the same pinned Go image as the container image, attested and attached to each GitHub release.
@@ -45,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Dependabot also updates the Ollama and otel-lgtm images pinned in `test/e2e/compose.yaml`; `make versions-check` (in CI) fails when `go.mod`, the Makefile and the Dockerfile name different Go versions.
+- The proxy reuses its 32 KiB copy buffers instead of allocating one per request: 53 % less memory and 13 % less time per proxied request (benchstat, 8 runs, p=0.000).
 - Fuzzing no longer runs on pull requests: random exploration made an unrelated change fail when it found something, and `make test` already replays the corpus. CI legs are now lint and scan, unit tests, integration tests (with coverage) and E2E.
 - `docker-compose.yml` renamed to `compose.yaml`; the service is never pulled (`pull_policy: build`) and is limited to 256 processes.
 - Makefile lifecycle targets wrap `docker compose` one to one: `up` (`up -d --build --wait`), `down`, `start`, `stop`, `restart`, `build`, `rebuild`, `clean`, `ps` (`--all`), `logs` (`--follow`, `TAIL`), `top`, `images`.

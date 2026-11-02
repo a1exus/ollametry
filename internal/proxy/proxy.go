@@ -85,6 +85,7 @@ func New(cfg Config) (*Proxy, error) {
 		Rewrite:        p.rewrite,
 		Transport:      cfg.Transport,
 		FlushInterval:  -1, // flush every write: tokens must reach clients as they are generated
+		BufferPool:     &copyBuffers,
 		ModifyResponse: p.modifyResponse,
 		ErrorHandler:   p.errorHandler,
 		// Copy errors are mostly clients hanging up; they are already
@@ -92,6 +93,23 @@ func New(cfg Config) (*Proxy, error) {
 		ErrorLog: slog.NewLogLogger(cfg.Logger.Handler(), slog.LevelDebug),
 	}
 	return p, nil
+}
+
+// copyBuffers reuses ReverseProxy's 32 KiB copy buffers; without a pool it
+// allocates one per request.
+var copyBuffers bufferPool
+
+type bufferPool struct{ pool sync.Pool }
+
+func (b *bufferPool) Get() []byte {
+	if buf, ok := b.pool.Get().(*[]byte); ok {
+		return *buf
+	}
+	return make([]byte, 32<<10)
+}
+
+func (b *bufferPool) Put(buf []byte) {
+	b.pool.Put(&buf)
 }
 
 // NewTransport returns the upstream transport. It ignores HTTP(S)_PROXY, has
