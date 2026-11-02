@@ -25,6 +25,7 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
+	"github.com/a1exus/ollametry/internal/dialect"
 	"github.com/a1exus/ollametry/internal/telemetry"
 )
 
@@ -165,7 +166,11 @@ func fixture(t *testing.T, name string) []byte {
 }
 
 // replay serves body line by line, flushing after each, like Ollama does.
+// Streams are paced like real ones: Windows' monotonic clock ticks only
+// every 0.5 to 15.6 ms, so an instant replay would give the first and last
+// token the same timestamp and no time per output token.
 func replay(status int, contentType string, body []byte) http.HandlerFunc {
+	streaming := dialect.FormatFromContentType(contentType).Streaming()
 	return func(w http.ResponseWriter, r *http.Request) {
 		_, _ = io.Copy(io.Discard, r.Body)
 		w.Header().Set("Content-Type", contentType)
@@ -175,6 +180,9 @@ func replay(status int, contentType string, body []byte) http.HandlerFunc {
 			_, _ = w.Write(line)
 			if flusher != nil {
 				flusher.Flush()
+			}
+			if streaming {
+				time.Sleep(time.Millisecond)
 			}
 		}
 	}

@@ -155,7 +155,7 @@ lint-ci: ## Lint GitHub Actions workflows (actionlint, zizmor)
 	docker run --rm -v "$(CURDIR)":/repo -w /repo rhysd/actionlint:$(ACTIONLINT_VERSION) -color
 	docker run --rm -v "$(CURDIR)":/repo:ro -w /repo ghcr.io/zizmorcore/zizmor:$(ZIZMOR_VERSION) --offline .
 
-DIST_PLATFORMS ?= darwin/arm64 darwin/amd64 linux/arm64 linux/amd64
+DIST_PLATFORMS ?= darwin/arm64 darwin/amd64 linux/arm64 linux/amd64 windows/amd64 windows/arm64
 
 .PHONY: dist
 dist: ## Build reproducible release archives and SHA256SUMS into dist/ (VERSION=vX.Y.Z)

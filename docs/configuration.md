@@ -19,6 +19,19 @@ variables. `docker run --rm ollametry:dev -help` lists the flags.
 | `OLLAMETRY_LOG_LEVEL`, `OLLAMETRY_LOG_FORMAT` | `info`, `json` | same | Logging (`text` for humans) |
 | `OLLAMETRY_PROMETHEUS` | `true` | same | Serve Prometheus metrics at `/metrics` on the admin listener ([Prometheus exporter](prometheus.md)) |
 
+## Setting variables
+
+Every `OLLAMETRY_*` variable has a flag (`ollametry -help`), and flags win.
+How to set the variables depends on how ollametry runs:
+
+| Runs as | Where |
+|---|---|
+| Docker Compose | the shell or a `.env` file next to `compose.yaml` (see [Compose](#compose)) |
+| macOS launchd | `EnvironmentVariables` in the plist |
+| Linux systemd | `Environment=` lines (`sudo systemctl edit ollametry`) |
+| Windows | user environment variables: `[Environment]::SetEnvironmentVariable("OLLAMETRY_LOG_LEVEL", "debug", "User")` |
+| A shell | `export OLLAMETRY_LOG_LEVEL=debug` (bash), `$env:OLLAMETRY_LOG_LEVEL = "debug"` (PowerShell) |
+
 ## OpenTelemetry exporter
 
 The exporter is configured by the standard OpenTelemetry variables:

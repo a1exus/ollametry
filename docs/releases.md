@@ -21,9 +21,9 @@ then exercises the exact pipeline the dry run checked.
 
 The release workflow then:
 
-- builds reproducible binary archives for macOS and Linux (`arm64`,
-  `amd64`) with `make dist`, the same pinned Go image and flags as the
-  container image, and attests them;
+- builds reproducible binary archives for macOS and Linux (`.tar.gz`) and
+  Windows (`.zip`), each for `arm64` and `amd64`, with `make dist`: the same
+  pinned Go image and flags as the container image. It attests them;
 - builds `ghcr.io/a1exus/ollametry` for `linux/amd64` and `linux/arm64`,
   tagged `X.Y.Z`, `X.Y`, `X` (from 1.0) and `latest`, with an SBOM and build
   provenance;
@@ -36,6 +36,7 @@ The release workflow then:
 ```sh
 gh attestation verify oci://ghcr.io/a1exus/ollametry:X.Y.Z -R a1exus/ollametry
 gh attestation verify ollametry_X.Y.Z_darwin_arm64.tar.gz -R a1exus/ollametry
+gh attestation verify ollametry_X.Y.Z_windows_amd64.zip -R a1exus/ollametry
 ```
 
 To check reproducibility, run `make dist VERSION=vX.Y.Z` on the tagged commit

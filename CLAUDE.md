@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-ollametry is a Go reverse proxy in front of a host-installed Ollama (macOS app, not Docker). It relays every request unchanged and records OpenTelemetry metrics from the usage stats inside Ollama's responses, plus gauges from polling `/api/ps` and `/api/tags`. It exports OTLP/HTTP to `otel-lgtm` from `~/opt/grafana` by joining that stack's `grafana_default` network. It also serves the same metrics at `/metrics` on the admin listener, which makes it an Ollama Prometheus exporter (`OLLAMETRY_PROMETHEUS`, default on). Module: `github.com/a1exus/ollametry`.
+ollametry is a Go reverse proxy in front of a host-installed Ollama (here the macOS app, not Docker; macOS, Linux and Windows are supported). It relays every request unchanged and records OpenTelemetry metrics from the usage stats inside Ollama's responses, plus gauges from polling `/api/ps` and `/api/tags`. It exports OTLP/HTTP to `otel-lgtm` from `~/opt/grafana` by joining that stack's `grafana_default` network. It also serves the same metrics at `/metrics` on the admin listener, which makes it an Ollama Prometheus exporter (`OLLAMETRY_PROMETHEUS`, default on). Module: `github.com/a1exus/ollametry`.
 
 ## Layout
 
@@ -23,7 +23,8 @@ ollametry is a Go reverse proxy in front of a host-installed Ollama (macOS app, 
 | `compose.yaml` | The `ollametry` service; Makefile lifecycle targets wrap `docker compose` |
 | `deploy/prometheus` | Recording and alerting rules with promtool unit tests (`make rules-check`, in CI). Cold loads are load-duration observations above the `le="1"` bucket: warm requests report milliseconds |
 | `deploy/launchd` | macOS launchd agent for the native binary; shipped in darwin archives |
-| `tools/dist.sh` | `make dist`: reproducible release archives (sorted tar, fixed mtime from the last commit, `gzip -n`) built in the pinned golang image |
+| `deploy/systemd` | Hardened systemd unit for the Linux binary (`systemd-analyze security` 1.2); shipped in linux archives |
+| `tools/dist.sh` | `make dist`: reproducible release archives (sorted tar, fixed mtime from the last commit, `gzip -n`) built in the pinned golang image . Windows gets `.zip` archives with `ollametry.exe`, written by `tools/mkzip` (archive/zip through `os.Root`; the golang image has no zip) |
 | `docs/` | User docs: install, containers, clients, metrics, prometheus, configuration, operations, development, releases. README is an overview with links |
 | `test/e2e` | E2E tests (`//go:build e2e`) and their throwaway stack `compose.yaml`. Integration tests are `*_integration_test.go` with `//go:build integration`; golangci-lint builds both tags |
 | `THIRD_PARTY_NOTICES.md`, `tools/notices.awk` | Third-party attribution. The Go module table between the `go-licenses` markers is generated (`make notices`, checked in CI by `notices-check`); the other sections are hand-written |
@@ -64,7 +65,7 @@ Verified against Ollama 0.40.13 and `grafana/otel-lgtm:0.39.0` (Prometheus 3.15.
 
 | Workflow | Runs on | Does |
 |---|---|---|
-| `ci.yml` | PRs, pushes to `main` | Matrix legs, each one `make` target: `ci-lint` (tidy-check, versions-check, lint, vuln, lint-ci, openapi-check, dashboard-check, rules-check, notices-check), `test-unit`, `cover` (unit + integration). E2E is local only (`make e2e`, `make e2e-hermetic`): it needs a real Ollama and multi-GB images, and the integration tests already cover the assembled binary and OTLP on every PR. Caches are bind-mounted dirs (`CACHE_GOMOD`, `CACHE_GOBUILD`, `CACHE_GOLANGCI`) kept by `actions/cache`, saved only on pushes to `main`. Multi-arch image build without QEMU and a smoke test without Ollama; dependency review on PRs |
+| `ci.yml` | PRs, pushes to `main` | Matrix legs, each one `make` target: `ci-lint` (tidy-check, versions-check, lint, vuln, lint-ci, openapi-check, dashboard-check, rules-check, notices-check), `test-unit`, `cover` (unit + integration). E2E is local only (`make e2e`, `make e2e-hermetic`): it needs a real Ollama and multi-GB images, and the integration tests already cover the assembled binary and OTLP on every PR. Caches are bind-mounted dirs (`CACHE_GOMOD`, `CACHE_GOBUILD`, `CACHE_GOLANGCI`) kept by `actions/cache`, saved only on pushes to `main`. Job `native`: `go test -tags integration` on macos-15 (with `-race`) and windows-2025 (no cgo, no `-race`) via setup-go, since those runners have no Docker. Multi-arch image build without QEMU and a smoke test without Ollama; dependency review on PRs |
 | `fuzz.yml` | nightly, manual | `make fuzz` per target in parallel, 10 min each; failing inputs uploaded. Not a PR gate: PRs replay the corpus via `make test` |
 | `codeql.yml` | PRs, `main`, weekly | CodeQL `security-and-quality` for Go (`GOTOOLCHAIN=auto` for the go.mod version) |
 | `scorecard.yml` | `main`, weekly | OpenSSF Scorecard, published for the README badge |
