@@ -11,7 +11,7 @@ $1 != "github.com/a1exus/ollametry" && NF >= 3 {
 }
 END {
 	print "| Package | License |"
-	print "|---|---|"
+	print "| --- | --- |"
 	for (i = 1; i <= n; i++) {
 		pkg = order[i]
 		printf "| [`%s`](https://pkg.go.dev/%s?tab=licenses) | %s |\n", pkg, pkg, licenses[pkg]
