@@ -76,7 +76,7 @@ lists every target.
 |---|---|
 | [Clients](docs/clients.md) | Pointing the Ollama CLI and OpenAI/Anthropic SDKs at the proxy; measuring every client |
 | [Metrics](docs/metrics.md) | Every metric and attribute, `error.type`, limits, writing PromQL against OTLP series |
-| [Prometheus exporter](docs/prometheus.md) | Scraping `/metrics`, running without otel-lgtm, how it compares with OTLP |
+| [Prometheus exporter](docs/prometheus.md) | Scraping `/metrics`, running without otel-lgtm, how it compares with OTLP, alerting and recording rules |
 | [Configuration](docs/configuration.md) | `OLLAMETRY_*`, `OTEL_*` and Compose variables |
 | [Operations](docs/operations.md) | Compose lifecycle targets, health endpoints, dashboard provisioning, upgrading, troubleshooting |
 | [Development](docs/development.md) | Containerized toolchain, tests, fuzzing, CI |

@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Dashboard: prompt processing p95 in the Latency row, and a collapsed "ollametry and Ollama" row with the Ollama version, in-flight HTTP requests, and the proxy's goroutines and memory.
+- Prometheus recording and alerting rules (`deploy/prometheus/ollametry-rules.yml`): Ollama down, ollametry absent, server error ratio, slow time to first token, model thrashing, models offloaded to CPU, cardinality overflow. Every alert has a promtool unit test; `make rules-check` runs them, in CI too.
 - Prometheus exporter: `/metrics` on the admin listener (`:11436`) serves every metric in the Prometheus text format, alongside the OTLP push and from the same meter provider, so names, labels, views and limits match. On by default; `OLLAMETRY_PROMETHEUS=false` turns it off. Documented in `docs/prometheus.md`, including running without otel-lgtm.
 - Three test layers: unit (no build tag), integration (`-tags integration`: the proxy and poller against a fake Ollama, and the whole binary exporting OTLP/HTTP to a fake collector) and end-to-end (`test/e2e`, `-tags e2e`: requests through the container to a real Ollama in every API family, checked in otel-lgtm's Prometheus). `make test-unit`, `make test-integration`, `make e2e` (running stack), `make e2e-hermetic` (throwaway stack from `test/e2e/compose.yaml`). E2E runs locally only.
 - Nightly fuzzing workflow (`fuzz.yml`), 10 minutes per target in parallel, uploading failing inputs.
