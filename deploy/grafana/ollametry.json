@@ -614,7 +614,7 @@
       "gridPos": {
         "x": 0,
         "y": 14,
-        "w": 8,
+        "w": 6,
         "h": 8
       },
       "datasource": {
@@ -666,9 +666,9 @@
       "title": "Request duration",
       "description": "Whole request, from the proxy receiving it to the last byte relayed.",
       "gridPos": {
-        "x": 8,
+        "x": 6,
         "y": 14,
-        "w": 8,
+        "w": 6,
         "h": 8
       },
       "datasource": {
@@ -720,9 +720,9 @@
       "title": "Decode speed by model",
       "description": "Output tokens per second within a request: 1 / mean time per output token.",
       "gridPos": {
-        "x": 16,
+        "x": 12,
         "y": 14,
-        "w": 8,
+        "w": 6,
         "h": 8
       },
       "datasource": {
@@ -1424,6 +1424,262 @@
           "fieldConfig": {
             "defaults": {
               "unit": "s",
+              "min": 0,
+              "color": {
+                "mode": "palette-classic-by-name"
+              },
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 0,
+                "showPoints": "auto"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "type": "timeseries",
+      "title": "Prompt processing p95",
+      "description": "prompt_eval_duration as Ollama reports it: time to process the prompt before the first token. Grows with prompt length; drops with prompt cache hits.",
+      "gridPos": {
+        "x": 18,
+        "y": 14,
+        "w": 6,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le, gen_ai_request_model) (rate(ollama_prompt_eval_duration_seconds_bucket{gen_ai_request_model=~\"$model\"}[$__rate_interval])))",
+          "legendFormat": "{{gen_ai_request_model}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "color": {
+            "mode": "palette-classic-by-name"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 105,
+      "type": "row",
+      "title": "ollametry and Ollama",
+      "collapsed": true,
+      "gridPos": {
+        "x": 0,
+        "y": 55,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [
+        {
+          "id": 26,
+          "type": "stat",
+          "title": "Ollama version",
+          "description": "From ollama_build_info, while Ollama is reachable.",
+          "gridPos": {
+            "x": 0,
+            "y": 56,
+            "w": 6,
+            "h": 8
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "max by (ollama_version) (ollama_build_info)",
+              "instant": true,
+              "legendFormat": "{{ollama_version}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "noValue": "Unknown",
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "text"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "textMode": "name",
+            "colorMode": "none",
+            "graphMode": "none",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            }
+          }
+        },
+        {
+          "id": 27,
+          "type": "timeseries",
+          "title": "In-flight HTTP requests",
+          "description": "Every proxied request in flight, by route: inference and everything else (pulls, uploads).",
+          "gridPos": {
+            "x": 6,
+            "y": 56,
+            "w": 6,
+            "h": 8
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (http_route) (http_server_active_requests)",
+              "legendFormat": "{{http_route}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "color": {
+                "mode": "palette-classic-by-name"
+              },
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 0,
+                "showPoints": "auto"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        },
+        {
+          "id": 28,
+          "type": "timeseries",
+          "title": "Proxy goroutines",
+          "description": "ollametry's own goroutines: one or two per open connection. Steady growth without traffic means a leak.",
+          "gridPos": {
+            "x": 12,
+            "y": 56,
+            "w": 6,
+            "h": 8
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "max by (service_version) (go_goroutine_count{job=\"ollametry\"})",
+              "legendFormat": "ollametry {{service_version}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "color": {
+                "mode": "palette-classic-by-name"
+              },
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 0,
+                "showPoints": "auto"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        },
+        {
+          "id": 29,
+          "type": "timeseries",
+          "title": "Proxy memory",
+          "description": "ollametry's own Go memory by type.",
+          "gridPos": {
+            "x": 18,
+            "y": 56,
+            "w": 6,
+            "h": 8
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (go_memory_type) (go_memory_used_bytes{job=\"ollametry\"})",
+              "legendFormat": "{{go_memory_type}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
               "min": 0,
               "color": {
                 "mode": "palette-classic-by-name"
