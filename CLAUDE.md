@@ -62,13 +62,13 @@ Verified against Ollama 0.40.13 and `grafana/otel-lgtm:0.39.0` (Prometheus 3.15.
 
 | Workflow | Runs on | Does |
 |---|---|---|
-| `ci.yml` | PRs, pushes to `main` | Matrix legs, each one `make` target: `ci-lint` (tidy-check, lint, vuln, lint-ci, dashboard-check, rules-check, notices-check), `test-unit`, `cover` (unit + integration). E2E is local only (`make e2e`, `make e2e-hermetic`): it needs a real Ollama and multi-GB images, and the integration tests already cover the assembled binary and OTLP on every PR. Caches are bind-mounted dirs (`CACHE_GOMOD`, `CACHE_GOBUILD`, `CACHE_GOLANGCI`) kept by `actions/cache`, saved only on pushes to `main`. Multi-arch image build without QEMU and a smoke test without Ollama; dependency review on PRs |
+| `ci.yml` | PRs, pushes to `main` | Matrix legs, each one `make` target: `ci-lint` (tidy-check, versions-check, lint, vuln, lint-ci, dashboard-check, rules-check, notices-check), `test-unit`, `cover` (unit + integration). E2E is local only (`make e2e`, `make e2e-hermetic`): it needs a real Ollama and multi-GB images, and the integration tests already cover the assembled binary and OTLP on every PR. Caches are bind-mounted dirs (`CACHE_GOMOD`, `CACHE_GOBUILD`, `CACHE_GOLANGCI`) kept by `actions/cache`, saved only on pushes to `main`. Multi-arch image build without QEMU and a smoke test without Ollama; dependency review on PRs |
 | `fuzz.yml` | nightly, manual | `make fuzz` per target in parallel, 10 min each; failing inputs uploaded. Not a PR gate: PRs replay the corpus via `make test` |
 | `codeql.yml` | PRs, `main`, weekly | CodeQL `security-and-quality` for Go (`GOTOOLCHAIN=auto` for the go.mod version) |
 | `scorecard.yml` | `main`, weekly | OpenSSF Scorecard, published for the README badge |
 | `release.yml` | tags `vX.Y.Z` | GHCR image (amd64, arm64) with SBOM and provenance, attestation; binary archives for darwin and linux (`make dist`) with attestation; GitHub release from the CHANGELOG section with the archives and `SHA256SUMS` (fails if the section is missing). Never run yet: the first tag is its first test |
 
-Every action is pinned to a commit SHA with the version in a comment, chosen at least 14 days after release; Dependabot keeps them current with the same 14-day cooldown. Workflows have `contents: read` (or none) at the top and grant more per job, each with a comment; `make lint-ci` (actionlint, zizmor) enforces this locally and in CI.
+Every action is pinned to a commit SHA with the version in a comment, chosen at least 14 days after release; Dependabot keeps them current with the same 14-day cooldown. Dependabot also watches Go modules, the Dockerfile and `test/e2e/compose.yaml`; it cannot read the Makefile's tool versions (`*_VERSION`), which are updated by hand. The Go version appears in `go.mod`, the Makefile and the Dockerfile; `make versions-check` keeps them equal. Workflows have `contents: read` (or none) at the top and grant more per job, each with a comment; `make lint-ci` (actionlint, zizmor) enforces this locally and in CI.
 
 ## Common commands
 

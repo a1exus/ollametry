@@ -157,8 +157,16 @@ notices: ## Regenerate the Go module table in THIRD_PARTY_NOTICES.md (go-license
 notices-check: notices ## Fail if THIRD_PARTY_NOTICES.md misses a dependency
 	@git diff --exit-code -- THIRD_PARTY_NOTICES.md || { echo 'notices-check: run make notices and commit the result' >&2; exit 1; }
 
+.PHONY: versions-check
+versions-check: ## Fail if go.mod, the Makefile and the Dockerfile name different Go versions
+	@mod=$$(awk '/^go /{print $$2}' go.mod); \
+	docker=$$(sed -n 's/^FROM .*golang:\([0-9.]*\)@.*/\1/p' Dockerfile); \
+	if [ "$$mod" != "$(GO_VERSION)" ] || [ "$$docker" != "$(GO_VERSION)" ]; then \
+		echo "versions-check: go.mod $$mod, Makefile GO_VERSION $(GO_VERSION), Dockerfile golang $$docker; keep them equal" >&2; exit 1; \
+	fi; echo "Go $(GO_VERSION) everywhere"
+
 .PHONY: ci-lint
-ci-lint: tidy-check lint vuln lint-ci dashboard-check rules-check notices-check ## CI lint leg: tidy, lint, vuln, workflows, dashboard, rules, notices
+ci-lint: tidy-check versions-check lint vuln lint-ci dashboard-check rules-check notices-check ## CI lint leg: tidy, versions, lint, vuln, workflows, dashboard, rules, notices
 
 .PHONY: check
 check: lint lint-ci dashboard-check rules-check test vuln ## Lint code, workflows and dashboard, test and scan (run before every commit)

@@ -29,6 +29,7 @@ volumes `ollametry-gomod`, `ollametry-gobuild` and `ollametry-golangci`.
 | `make fmt` | gofmt and goimports |
 | `make vuln` | govulncheck on dependencies and the standard library |
 | `make tidy` / `make tidy-check` | Tidy `go.mod`; fail if it is not tidy |
+| `make versions-check` | Fail if `go.mod`, the Makefile and the Dockerfile name different Go versions |
 | `make lint-ci` | actionlint and zizmor on `.github/workflows` |
 | `make dashboard-check` | Validate the Grafana dashboard JSON |
 | `make rules-check` | `promtool check rules` and `promtool test rules` on [`deploy/prometheus`](../deploy/prometheus) |
