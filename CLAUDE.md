@@ -21,6 +21,7 @@ ollametry is a Go reverse proxy in front of a host-installed Ollama (macOS app, 
 | `deploy/grafana/ollametry.json` | Dashboard, uid `ollametry`, datasource variable defaulting to uid `prometheus`; provisioned by `~/opt/grafana` (`make dashboards`) |
 | `compose.yaml` | The `ollametry` service; Makefile lifecycle targets wrap `docker compose` |
 | `docs/` | User docs: clients, metrics, configuration, operations, development, releases. README is an overview with links |
+| `THIRD_PARTY_NOTICES.md`, `tools/notices.awk` | Third-party attribution. The Go module table between the `go-licenses` markers is generated (`make notices`, checked in CI by `notices-check`); the other sections are hand-written |
 
 ## Request flow
 
@@ -54,7 +55,7 @@ Verified against Ollama 0.40.13 and `grafana/otel-lgtm:0.39.0` (Prometheus 3.15.
 
 | Workflow | Runs on | Does |
 |---|---|---|
-| `ci.yml` | PRs, pushes to `main` | Matrix of three parallel legs, each one `make` target: `ci-lint` (tidy-check, lint, vuln, lint-ci, dashboard-check), `cover`, `fuzz` (20s per target). Caches are bind-mounted dirs (`CACHE_GOMOD`, `CACHE_GOBUILD`, `CACHE_GOLANGCI`) kept by `actions/cache`, saved only on pushes to `main`. Multi-arch image build without QEMU and a smoke test without Ollama; dependency review on PRs |
+| `ci.yml` | PRs, pushes to `main` | Matrix of three parallel legs, each one `make` target: `ci-lint` (tidy-check, lint, vuln, lint-ci, dashboard-check, notices-check), `cover`, `fuzz` (20s per target). Caches are bind-mounted dirs (`CACHE_GOMOD`, `CACHE_GOBUILD`, `CACHE_GOLANGCI`) kept by `actions/cache`, saved only on pushes to `main`. Multi-arch image build without QEMU and a smoke test without Ollama; dependency review on PRs |
 | `codeql.yml` | PRs, `main`, weekly | CodeQL `security-and-quality` for Go (`GOTOOLCHAIN=auto` for the go.mod version) |
 | `scorecard.yml` | `main`, weekly | OpenSSF Scorecard, published for the README badge |
 | `release.yml` | tags `vX.Y.Z` | GHCR image (amd64, arm64) with SBOM and provenance, attestation, GitHub release from the CHANGELOG section (fails if the section is missing) |

@@ -34,6 +34,8 @@ decoders handle. Both apply to human contributors too.
 - Add or update tests. New response shapes get a fixture recorded from a real
   Ollama in `internal/dialect/testdata` (cap the output with `num_predict` or
   `max_tokens` so fixtures stay small).
+- A new dependency needs `make notices`; a new tool, service or action needs a row in
+  [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 - Add a line to `CHANGELOG.md` under `## [Unreleased]`
   ([Keep a Changelog](https://keepachangelog.com/en/1.1.0/)).
 - Changing a metric name or attribute is a breaking change: update the
