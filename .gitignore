@@ -27,3 +27,9 @@ go.work.sum
 
 # Browser automation output
 .playwright-mcp/
+
+# CI tool caches (Makefile CACHE_* bind mounts)
+/.cache/
+
+# Local Compose overrides (docs/releases.md)
+/compose.override.yaml

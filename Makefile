@@ -9,6 +9,7 @@ PROXY_URL        ?= http://127.0.0.1:11435
 ADMIN_URL        ?= http://127.0.0.1:11436
 OLLAMA_URL       ?= http://127.0.0.1:11434
 WAIT_TIMEOUT     ?= 120
+TAIL             ?= 200
 CURL             := curl --silent --show-error --fail --max-time 10
 
 GO_VERSION       ?= 1.27.3
@@ -16,16 +17,22 @@ GOLANGCI_VERSION ?= v2.15.0
 GOVULN_VERSION   ?= v1.9.0
 ACTIONLINT_VERSION ?= 1.7.12
 ZIZMOR_VERSION   ?= 1.30.1
+JQ_VERSION       ?= 1.8.1
 VERSION          ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
-# Toolchains run in containers; module and build caches live in named volumes.
+# Toolchains run in containers. Caches are named volumes; CI sets them to
+# directories (absolute paths become bind mounts) so actions/cache can keep them.
+CACHE_GOMOD      ?= ollametry-gomod
+CACHE_GOBUILD    ?= ollametry-gobuild
+CACHE_GOLANGCI   ?= ollametry-golangci
+
 DOCKER_RUN := docker run --rm --init \
 	-v "$(CURDIR)":/app -w /app \
-	-v ollametry-gomod:/go/pkg/mod \
-	-v ollametry-gobuild:/root/.cache/go-build \
+	-v "$(CACHE_GOMOD)":/go/pkg/mod \
+	-v "$(CACHE_GOBUILD)":/root/.cache/go-build \
 	-e GOFLAGS=-buildvcs=false
 GO       := $(DOCKER_RUN) golang:$(GO_VERSION) go
-GOLANGCI := $(DOCKER_RUN) -v ollametry-golangci:/root/.cache/golangci-lint \
+GOLANGCI := $(DOCKER_RUN) -v "$(CACHE_GOLANGCI)":/root/.cache/golangci-lint \
 	golangci/golangci-lint:$(GOLANGCI_VERSION) golangci-lint
 
 .PHONY: help
@@ -73,41 +80,79 @@ vuln: ## Scan dependencies and stdlib for known vulnerabilities
 tidy: ## Tidy go.mod and go.sum
 	$(GO) mod tidy
 
+.PHONY: tidy-check
+tidy-check: tidy ## Fail if go.mod or go.sum are not tidy
+	@git diff --exit-code -- go.mod go.sum || { echo 'tidy-check: run make tidy and commit the result' >&2; exit 1; }
+
+.PHONY: dashboard-check
+dashboard-check: ## Validate the Grafana dashboard JSON
+	@for f in deploy/grafana/*.json; do \
+		docker run --rm -i ghcr.io/jqlang/jq:$(JQ_VERSION) -e '.uid and .title and (.panels | length > 0)' < "$$f" >/dev/null \
+			|| { echo "dashboard-check: $$f is not a valid dashboard" >&2; exit 1; }; \
+	done
+
 .PHONY: lint-ci
 lint-ci: ## Lint GitHub Actions workflows (actionlint, zizmor)
 	docker run --rm -v "$(CURDIR)":/repo -w /repo rhysd/actionlint:$(ACTIONLINT_VERSION) -color
 	docker run --rm -v "$(CURDIR)":/repo:ro -w /repo ghcr.io/zizmorcore/zizmor:$(ZIZMOR_VERSION) --offline .
 
-.PHONY: check
-check: lint lint-ci test vuln ## Lint code and workflows, test and scan (run before every commit)
+.PHONY: ci-lint
+ci-lint: tidy-check lint vuln lint-ci dashboard-check ## CI lint leg: tidy, lint, vuln, workflows, dashboard
 
-##@ Lifecycle
+.PHONY: check
+check: lint lint-ci dashboard-check test vuln ## Lint code, workflows and dashboard, test and scan (run before every commit)
+
+##@ Lifecycle (docker compose)
 
 .PHONY: up
-up: validate ## Build the image, start the proxy and wait until healthy
-	VERSION='$(VERSION)' $(COMPOSE) up --build --detach --wait --wait-timeout $(WAIT_TIMEOUT)
+up: validate ## Build if needed, start detached (up -d) and wait until healthy
+	VERSION='$(VERSION)' $(COMPOSE) up --detach --build --wait --wait-timeout $(WAIT_TIMEOUT)
 
 .PHONY: down
-down: ## Stop and remove the container
+down: ## Stop and remove the container and network
 	$(COMPOSE) down --remove-orphans
 
+.PHONY: start
+start: ## Start the existing, stopped container
+	$(COMPOSE) start $(SERVICE)
+
+.PHONY: stop
+stop: ## Stop the container without removing it
+	$(COMPOSE) stop $(SERVICE)
+
 .PHONY: restart
-restart: ## Restart the proxy
+restart: ## Restart the container (no rebuild; use up after code changes)
 	$(COMPOSE) restart $(SERVICE)
 
 .PHONY: build
-build: ## Build the container image
+build: ## Build the image, pulling newer base images
 	VERSION='$(VERSION)' $(COMPOSE) build --pull
+
+.PHONY: rebuild
+rebuild: ## Build the image from scratch (no layer cache)
+	VERSION='$(VERSION)' $(COMPOSE) build --pull --no-cache
+
+.PHONY: clean
+clean: ## Remove the container, network and locally built images
+	$(COMPOSE) down --remove-orphans --rmi local
 
 ##@ Observe
 
 .PHONY: ps
-ps: ## Show container status
-	$(COMPOSE) ps
+ps: ## Show container status, stopped ones included
+	$(COMPOSE) ps --all
+
+.PHONY: top
+top: ## Show the processes running in the container
+	$(COMPOSE) top $(SERVICE)
+
+.PHONY: images
+images: ## List the images used by the project
+	$(COMPOSE) images
 
 .PHONY: logs
-logs: ## Follow proxy logs
-	$(COMPOSE) logs --follow --tail=200 $(SERVICE)
+logs: ## Follow proxy logs (logs --follow; TAIL=200 lines of history)
+	$(COMPOSE) logs --follow --tail=$(TAIL) $(SERVICE)
 
 .PHONY: health
 health: ## Check Ollama, the proxy and the proxy's readiness
