@@ -3,7 +3,7 @@ module github.com/a1exus/ollametry
 go 1.27.3
 
 require (
-	github.com/prometheus/client_golang v1.24.1
+	github.com/prometheus/client_golang v1.25.0
 	go.opentelemetry.io/contrib/exporters/autoexport v0.72.0
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.72.0
 	go.opentelemetry.io/otel v1.47.0
