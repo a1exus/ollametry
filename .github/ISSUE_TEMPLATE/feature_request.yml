@@ -1,0 +1,20 @@
+name: Feature request
+description: A metric, API or dashboard panel you would like
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What question can you not answer today?
+      description: Describe the situation, e.g. "I can't tell whether slow responses come from model loads or long prompts".
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: The metric, attribute, API coverage or panel you have in mind, if any. Mention the OpenTelemetry semantic convention if one applies.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
