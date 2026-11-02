@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Release dry run: running the release workflow manually builds the image and the archives and renders the notes from `[Unreleased]`, publishing nothing, so a tag is not the pipeline's first test.
 - `docs/containers.md`: where Ollama should run given GPU access (on the host on macOS and on Windows without NVIDIA; in a container only with NVIDIA CUDA or AMD ROCm on Linux), Homebrew installs for macOS, and NVIDIA Container Toolkit setup for Linux and WSL 2 with a GPU-backed Ollama container that ollametry reaches by name.
 - OpenAPI 3.1 document for the admin listener (`api/openapi.yaml`: `/livez`, `/readyz`, `/metrics`), linted with Spectral (`make openapi-check`, in CI) and checked against the real handlers by `TestHandlerMatchesOpenAPI`.
 - Container environments guide (`docs/containers.md`): Linux Docker Engine, macOS Docker Desktop and Apple `container`, Windows WSL 2, and how each reaches an Ollama listening on the host, based on Ollama's Host-header rules.

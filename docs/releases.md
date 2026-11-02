@@ -4,6 +4,12 @@
 
 ## Publishing
 
+Before tagging, run a dry run: *Actions → Release → Run workflow* on `main`, or
+`gh workflow run release.yml --ref main`. It builds the image and the archives
+and renders the release notes from `[Unreleased]` into the run summary, but
+publishes nothing; the archives and `notes.md` are attached to the run. A tag
+then exercises the exact pipeline the dry run checked.
+
 1. Move the `## [Unreleased]` entries in [`CHANGELOG.md`](../CHANGELOG.md)
    under a new `## [X.Y.Z] - YYYY-MM-DD` heading and add its link at the
    bottom ([Keep a Changelog](https://keepachangelog.com/en/1.1.0/)).
