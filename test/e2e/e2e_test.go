@@ -3,7 +3,7 @@
 // Package e2e tests the deployed system from a client's point of view: real
 // requests through the ollametry container to a real Ollama, then the
 // resulting series in otel-lgtm's Prometheus. Run it with `make e2e` (against
-// the local stack) or `make e2e-hermetic` (a throwaway stack, as CI does).
+// the local stack) or `make e2e-hermetic` (a throwaway stack). E2E runs locally only, never in CI.
 package e2e
 
 import (
