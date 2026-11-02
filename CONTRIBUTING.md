@@ -17,6 +17,7 @@ linters run in pinned containers.
 
 ```sh
 make check   # golangci-lint, workflow lint, go test -race, govulncheck
+make fuzz    # fuzz the parsers (FUZZTIME=30s per target)
 make up      # run against a local Ollama (needs ~/opt/grafana's network, see README)
 make smoke MODEL=<an installed model>
 ```

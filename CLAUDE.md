@@ -49,7 +49,7 @@ Verified against Ollama 0.40.13 and `grafana/otel-lgtm:0.39.0` (Prometheus 3.15.
 
 | Workflow | Runs on | Does |
 |---|---|---|
-| `ci.yml` | PRs, pushes to `main` | `make tidy` diff, `make lint`, `make cover`, `make vuln`, `make lint-ci`, dashboard JSON check; multi-arch image build and a smoke test without Ollama; dependency review on PRs |
+| `ci.yml` | PRs, pushes to `main` | `make tidy` diff, `make lint`, `make cover`, `make vuln`, `make fuzz` (20s per target), `make lint-ci`, dashboard JSON check; multi-arch image build and a smoke test without Ollama; dependency review on PRs |
 | `codeql.yml` | PRs, `main`, weekly | CodeQL `security-and-quality` for Go (`GOTOOLCHAIN=auto` for the go.mod version) |
 | `scorecard.yml` | `main`, weekly | OpenSSF Scorecard, published for the README badge |
 | `release.yml` | tags `vX.Y.Z` | GHCR image (amd64, arm64) with SBOM and provenance, attestation, GitHub release from the CHANGELOG section (fails if the section is missing) |
