@@ -2,11 +2,14 @@
 
 [← README](../README.md)
 
+- [Where Ollama should run: GPU access](#where-ollama-should-run-gpu-access)
 - [What the container needs](#what-the-container-needs)
 - [Linux: Docker Engine](#linux-docker-engine)
 - [macOS: Docker Desktop](#macos-docker-desktop)
 - [macOS: Apple container](#macos-apple-container)
+- [macOS: installing with Homebrew](#macos-installing-with-homebrew)
 - [Windows: WSL 2](#windows-wsl-2)
+- [NVIDIA GPUs on Linux and WSL 2](#nvidia-gpus-on-linux-and-wsl-2)
 
 | OS | Runtime | Compose and `make up` | Status |
 |---|---|---|---|
@@ -17,6 +20,27 @@
 
 On a Mac, the [native binary as a launchd service](install.md#macos-service-launchd)
 needs no container runtime at all.
+
+## Where Ollama should run: GPU access
+
+ollametry itself needs no GPU and runs anywhere. Ollama does: without one it
+falls back to the CPU, which is many times slower. A container only gets the
+GPU when the runtime passes it through, and that depends on the OS and the
+GPU vendor:
+
+| Host | GPU | Ollama in a container | Run Ollama |
+|---|---|---|---|
+| macOS (Apple silicon) | Apple GPU (Metal) | **CPU only.** "GPU acceleration is not available for Docker Desktop in macOS due to the lack of GPU passthrough and emulation" ([Ollama FAQ](https://docs.ollama.com/faq#how-do-i-use-ollama-with-gpu-acceleration-in-docker)). Apple `container` documents no GPU access for Linux containers either | **On the host**: the Ollama app or Homebrew. This is the setup ollametry is built around |
+| Windows | NVIDIA | GPU through Docker Desktop's WSL 2 backend (GPU paravirtualization, `--gpus=all`) or the NVIDIA Container Toolkit in WSL | On the host, or in a container with [NVIDIA GPUs](#nvidia-gpus-on-linux-and-wsl-2) |
+| Windows | AMD, Intel | **CPU only**: Docker Desktop passes through NVIDIA GPUs only ([Docker GPU support](https://docs.docker.com/desktop/features/gpu/)) | **On the host** |
+| Linux | NVIDIA | GPU with the [NVIDIA Container Toolkit](#nvidia-gpus-on-linux-and-wsl-2) | Either |
+| Linux | AMD | GPU with the `ollama/ollama:rocm` image and `--device /dev/kfd --device /dev/dri` ([Ollama Docker docs](https://docs.ollama.com/docker)) | Either |
+| Any | None | CPU either way | Either |
+
+So on macOS, and on Windows without an NVIDIA GPU, run Ollama on the host and
+only ollametry (or nothing at all) in a container. Running Ollama in a
+container makes sense where the runtime has hardware support, which today
+means NVIDIA (CUDA) on Linux and Windows, or AMD (ROCm) on Linux.
 
 ## What the container needs
 
@@ -80,7 +104,9 @@ Ollama app listens. See [operations](operations.md#running-with-docker-compose).
 ## macOS: Apple container
 
 Apple's [`container`](https://github.com/apple/container) runs Linux
-containers in lightweight VMs on Apple silicon. It has no Compose and no
+containers in lightweight VMs on Apple silicon. Install it with Homebrew
+(`brew install container`). Run only ollametry in it: Ollama belongs on the
+host, [with the GPU](#where-ollama-should-run-gpu-access). It has no Compose and no
 `host.docker.internal`, so run ollametry with `container run`. This project
 does not test it; the commands follow Apple's
 [host integration](https://github.com/apple/container/blob/main/docs/host-integration.md)
@@ -116,6 +142,21 @@ guides.
    `OTEL_EXPORTER_OTLP_ENDPOINT=http://host.container.internal:4318`: the
    two runtimes share no network, only the Mac's published ports.
 
+## macOS: installing with Homebrew
+
+Everything on the Mac side installs with [Homebrew](https://brew.sh):
+
+```sh
+brew install --cask ollama-app       # the Ollama app (menu bar), as used here
+brew install --cask docker-desktop   # Docker Desktop, for make up and the toolchain
+brew install container               # Apple container (optional)
+```
+
+To run Ollama as a background service without the app, use the formula
+instead of the cask: `brew install ollama && brew services start ollama`.
+Either way Ollama runs on the host with the GPU, which is
+[where it should run](#where-ollama-should-run-gpu-access) on a Mac.
+
 ## Windows: WSL 2
 
 Containers on Windows run inside WSL 2. Follow Microsoft's
@@ -130,3 +171,60 @@ then pick the case that matches where Ollama runs:
 
 Run `make` from the WSL shell, with the repository on the Linux file system
 (`~/...`, not `/mnt/c/...`), which is much faster for bind mounts.
+
+Ollama on Windows uses the GPU directly. Run it in a container only with an
+NVIDIA GPU; see [NVIDIA GPUs](#nvidia-gpus-on-linux-and-wsl-2).
+
+## NVIDIA GPUs on Linux and WSL 2
+
+To run Ollama itself in a container with an NVIDIA GPU, Docker needs the
+[NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
+This project does not test GPU containers; the commands below are NVIDIA's
+and Ollama's.
+
+**Driver.** On Linux, install the NVIDIA driver from your distribution. On
+WSL 2, install the driver **on Windows only**: NVIDIA's
+[CUDA on WSL guide](https://docs.nvidia.com/cuda/wsl-user-guide/index.html)
+says "Do not install any Linux display driver in WSL"; the Windows driver
+provides the GPU inside WSL. With Docker Desktop's WSL 2 backend nothing else
+is needed (run `wsl --update` for a current kernel); skip to *Run Ollama*.
+
+**Toolkit** (Linux, or Docker Engine inside a WSL 2 Ubuntu or Debian
+distribution), from NVIDIA's install guide:
+
+```sh
+sudo apt-get update && sudo apt-get install -y --no-install-recommends ca-certificates curl gnupg2
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor \
+  -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+  && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+    sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+```
+
+NVIDIA's guide also shows pinning the package version and the `yum`/`dnf`
+equivalents.
+
+**Verify** (from [Docker's GPU guide](https://docs.docker.com/desktop/features/gpu/)):
+
+```sh
+docker run --rm -it --gpus=all nvcr.io/nvidia/k8s/cuda-sample:nbody nbody -gpu -benchmark
+```
+
+**Run Ollama** with the GPU, on the network `make up` creates (`ollama_default`,
+from this repository's Compose project), so ollametry reaches it by name:
+
+```sh
+OLLAMA_UPSTREAM=http://ollama-gpu:11434 make up
+docker run -d --gpus=all --network ollama_default --name ollama-gpu \
+  -v ollama:/root/.ollama ollama/ollama
+make health
+```
+
+The Ollama image listens on all interfaces inside the container, so the Host
+check does not apply, and nothing is published to the host: clients go through
+ollametry on `127.0.0.1:11435`. Add `-p 127.0.0.1:11434:11434` if you also want
+direct access. For AMD GPUs on Linux, use `--device /dev/kfd --device /dev/dri`
+and `ollama/ollama:rocm` instead of `--gpus=all` and `ollama/ollama`.
