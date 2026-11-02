@@ -23,6 +23,8 @@ import (
 	"syscall"
 	"time"
 
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+
 	"github.com/a1exus/ollametry/internal/admin"
 	"github.com/a1exus/ollametry/internal/config"
 	"github.com/a1exus/ollametry/internal/ollama"
@@ -57,9 +59,21 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 	}
 	logger := newLogger(cfg, stdout)
 
+	var (
+		extraReaders   []sdkmetric.Reader
+		metricsHandler http.Handler
+	)
+	if cfg.Prometheus {
+		reader, handler, err := telemetry.NewPrometheusReader()
+		if err != nil {
+			return fmt.Errorf("set up Prometheus endpoint: %w", err)
+		}
+		extraReaders, metricsHandler = append(extraReaders, reader), handler
+	}
 	mp, err := telemetry.NewMeterProvider(ctx, telemetry.ProviderConfig{
 		ServiceVersion:   version,
 		CardinalityLimit: cfg.CardinalityLimit,
+		ExtraReaders:     extraReaders,
 	})
 	if err != nil {
 		return fmt.Errorf("set up metrics: %w", err)
@@ -111,7 +125,7 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 	}
 	adminSrv := &http.Server{
 		Addr:              cfg.AdminAddr,
-		Handler:           admin.Handler(ready),
+		Handler:           admin.Handler(ready, metricsHandler),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       5 * time.Second,
 		WriteTimeout:      5 * time.Second,

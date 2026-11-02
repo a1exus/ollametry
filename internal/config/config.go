@@ -25,8 +25,11 @@ type Config struct {
 	ShutdownTimeout  time.Duration
 	MaxInspectBytes  int
 	CardinalityLimit int
-	LogLevel         slog.Level
-	LogFormat        string
+	// Prometheus serves /metrics on the admin listener for scraping, next to
+	// whatever OTEL_METRICS_EXPORTER pushes.
+	Prometheus bool
+	LogLevel   slog.Level
+	LogFormat  string
 }
 
 // Defaults.
@@ -59,6 +62,7 @@ func Load(args []string, getenv func(string) string, usage io.Writer) (Config, e
 	shutdown := fs.String("shutdown-timeout", env("SHUTDOWN_TIMEOUT", DefaultShutdownTimeout.String()), "how long to let in-flight requests finish on shutdown [OLLAMETRY_SHUTDOWN_TIMEOUT]")
 	inspect := fs.String("max-inspect-bytes", env("MAX_INSPECT_BYTES", strconv.Itoa(DefaultMaxInspectBytes)), "largest request body or response document decoded for metrics [OLLAMETRY_MAX_INSPECT_BYTES]")
 	cardinality := fs.String("cardinality-limit", env("CARDINALITY_LIMIT", strconv.Itoa(DefaultCardinalityLimit)), "maximum attribute sets per metric [OLLAMETRY_CARDINALITY_LIMIT]")
+	prometheus := fs.String("prometheus", env("PROMETHEUS", "true"), "serve Prometheus metrics at /metrics on the admin listener [OLLAMETRY_PROMETHEUS]")
 	level := fs.String("log-level", env("LOG_LEVEL", "info"), "debug, info, warn or error [OLLAMETRY_LOG_LEVEL]")
 	format := fs.String("log-format", env("LOG_FORMAT", "json"), "json or text [OLLAMETRY_LOG_FORMAT]")
 
@@ -91,6 +95,8 @@ func Load(args []string, getenv func(string) string, usage io.Writer) (Config, e
 	check("max-inspect-bytes", err)
 	cfg.CardinalityLimit, err = positiveInt(*cardinality)
 	check("cardinality-limit", err)
+	cfg.Prometheus, err = strconv.ParseBool(*prometheus)
+	check("prometheus", err)
 	check("log-level", cfg.LogLevel.UnmarshalText([]byte(*level)))
 	if cfg.LogFormat != "json" && cfg.LogFormat != "text" {
 		check("log-format", fmt.Errorf("%q is not json or text", *format))

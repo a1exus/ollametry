@@ -1,5 +1,5 @@
-// Package admin serves ollametry's own health endpoints on a separate
-// listener, so they can never shadow an Ollama route.
+// Package admin serves ollametry's own health and metrics endpoints on a
+// separate listener, so they can never shadow an Ollama route.
 package admin
 
 import (
@@ -10,8 +10,12 @@ import (
 //
 //	GET /livez   200 while the process is serving
 //	GET /readyz  200 when ready() is true (Ollama reachable, not shutting down), else 503
-func Handler(ready func() bool) http.Handler {
+//	GET /metrics Prometheus exposition, when metrics is not nil
+func Handler(ready func() bool, metrics http.Handler) http.Handler {
 	mux := http.NewServeMux()
+	if metrics != nil {
+		mux.Handle("GET /metrics", metrics)
+	}
 	mux.HandleFunc("GET /livez", func(w http.ResponseWriter, _ *http.Request) {
 		write(w, http.StatusOK, "ok")
 	})

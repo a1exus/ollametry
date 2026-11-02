@@ -356,6 +356,24 @@ func TestE2E(t *testing.T) {
 	t.Run("request metrics reach Prometheus", func(t *testing.T) {
 		waitAll(t, cfg, exps)
 	})
+	t.Run("prometheus endpoint", func(t *testing.T) {
+		// The scrape endpoint reads the same instruments directly, so the
+		// requests above are already there.
+		status, body := do(t, http.MethodGet, cfg.adminURL+"/metrics", "", nil)
+		if status != http.StatusOK {
+			t.Fatalf("GET /metrics: status %d", status)
+		}
+		for _, want := range []string{
+			"\nollama_up 1\n",
+			"\nollama_build_info{",
+			fmt.Sprintf(`gen_ai_client_operation_duration_seconds_count{gen_ai_operation_name="chat",gen_ai_provider_name="ollama",gen_ai_request_model=%q`, cfg.model),
+			`gen_ai_client_operation_duration_seconds_count{error_type="404",gen_ai_operation_name="chat",gen_ai_provider_name="ollama",gen_ai_request_model="_OTHER"`,
+		} {
+			if !bytes.Contains(body, []byte(want)) {
+				t.Errorf("/metrics lacks %s", want)
+			}
+		}
+	})
 	t.Run("gauges reach Prometheus", func(t *testing.T) {
 		// Fresh samples only: a gauge keeps its last value for 5 minutes
 		// after it stops being exported.
