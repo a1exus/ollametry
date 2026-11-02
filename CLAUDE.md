@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-ollametry is a Go reverse proxy in front of a host-installed Ollama (here the macOS app, not Docker). It runs only as a container (`linux/amd64`, `linux/arm64`), on any OS with a container runtime; there are no separate binaries. It relays every request unchanged and records OpenTelemetry metrics from the usage stats inside Ollama's responses, plus gauges from polling `/api/ps` and `/api/tags`. It exports OTLP/HTTP to `otel-lgtm` from `~/opt/grafana` by joining that stack's `grafana_default` network. It also serves the same metrics at `/metrics` on the admin listener, which makes it an Ollama Prometheus exporter (`OLLAMETRY_PROMETHEUS`, default on). Module: `github.com/a1exus/ollametry`.
+ollametry is a Go reverse proxy in front of a host-installed Ollama (here the macOS app, not Docker). It runs only as a container (`linux/amd64`, `linux/arm64`), on any OS with a container runtime; there are no separate binaries. Ollama itself runs on the host everywhere except native Linux (not a VM): on macOS and Windows containers run inside a VM away from the GPU, so docs never put Ollama in a container there. It relays every request unchanged and records OpenTelemetry metrics from the usage stats inside Ollama's responses, plus gauges from polling `/api/ps` and `/api/tags`. It exports OTLP/HTTP to `otel-lgtm` from `~/opt/grafana` by joining that stack's `grafana_default` network. It also serves the same metrics at `/metrics` on the admin listener, which makes it an Ollama Prometheus exporter (`OLLAMETRY_PROMETHEUS`, default on). Module: `github.com/a1exus/ollametry`.
 
 ## Layout
 

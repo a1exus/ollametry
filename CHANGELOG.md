@@ -67,7 +67,8 @@ The first release.
   `/usr/share/doc/ollametry/`.
 - Docker Compose setup with `make` lifecycle targets (`up`, `down`, `logs`,
   `health`, ...), and guidance for running the container on macOS, Linux and
-  Windows, including why Ollama stays on the host where containers get no GPU.
+  Windows. Ollama runs on the host everywhere except native Linux, where it
+  may also run in a container with an NVIDIA or AMD GPU.
 - `ollametry` runs only in this container; there are no separate binaries.
 
 #### Quality and supply chain

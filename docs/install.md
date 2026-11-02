@@ -10,15 +10,16 @@
 ## How ollametry runs
 
 ollametry runs in a container, next to Ollama on the host. Ollama stays on
-the host because containers get no GPU on macOS, and none on Windows without
-an NVIDIA GPU ([GPU access](containers.md#where-ollama-should-run-gpu-access)).
+the host everywhere except native Linux: on macOS and Windows, containers run
+inside a VM, away from the GPU
+([GPU access](containers.md#where-ollama-runs-gpu-access)).
 Any container runtime works; [container environments](containers.md) covers
 how each one reaches Ollama on the host:
 
 | OS | Container runtime |
 | --- | --- |
 | macOS | [Docker Desktop](containers.md#macos-docker-desktop), [Apple `container`](containers.md#macos-apple-container) |
-| Linux | [Docker Engine](containers.md#linux-docker-engine), with [NVIDIA GPUs](containers.md#nvidia-gpus-on-linux-and-wsl-2) for Ollama itself if you want |
+| Linux | [Docker Engine](containers.md#linux-docker-engine); on native Linux, Ollama itself may also run in a container with an [NVIDIA GPU](containers.md#nvidia-gpus-on-native-linux) |
 | Windows | [WSL 2](containers.md#windows-wsl-2) with Docker Desktop or Docker Engine |
 
 The image is `linux/amd64` and `linux/arm64`, distroless, and runs as a

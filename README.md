@@ -48,12 +48,13 @@ the host, on any OS with a container runtime:
 
 | OS | Container runtime | Ollama |
 | --- | --- | --- |
-| macOS | [Docker Desktop, Apple `container`](docs/containers.md) | On the host: containers get no GPU |
-| Linux | [Docker Engine](docs/containers.md#linux-docker-engine) | On the host, or in a container with an NVIDIA or AMD GPU |
-| Windows | [WSL 2](docs/containers.md#windows-wsl-2) with Docker Desktop or Docker Engine | On the host, or in a container with an NVIDIA GPU |
+| macOS | [Docker Desktop, Apple `container`](docs/containers.md) | On the host |
+| Linux | [Docker Engine](docs/containers.md#linux-docker-engine) | On the host; on native Linux (not a VM) also in a container with an NVIDIA or AMD GPU |
+| Windows | [WSL 2](docs/containers.md#windows-wsl-2) with Docker Desktop or Docker Engine | On the host |
 
-Why Ollama belongs on the host where containers get no GPU:
-[GPU access](docs/containers.md#where-ollama-should-run-gpu-access).
+Ollama runs on the host everywhere except native Linux: on macOS and Windows
+containers run inside a VM, away from the GPU
+([GPU access](docs/containers.md#where-ollama-runs-gpu-access)).
 
 ## Quick start
 
