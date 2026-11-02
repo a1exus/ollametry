@@ -338,3 +338,39 @@ func (b *safeBuffer) String() string {
 	defer b.mu.Unlock()
 	return b.buf.String()
 }
+
+// healthcheck is the container's health probe (distroless has no curl): it
+// must report only a live admin listener as healthy.
+func TestHealthcheck(t *testing.T) {
+	t.Parallel()
+	serve := func(status int) string {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != "/livez" {
+				http.NotFound(w, r)
+				return
+			}
+			w.WriteHeader(status)
+		}))
+		t.Cleanup(srv.Close)
+		_, port, _ := net.SplitHostPort(srv.Listener.Addr().String())
+		// The probe always dials loopback, whatever host the address names.
+		return net.JoinHostPort("0.0.0.0", port)
+	}
+	tests := []struct {
+		name, addr string
+		want       int
+	}{
+		{"live", serve(http.StatusOK), 0},
+		{"unhealthy status", serve(http.StatusServiceUnavailable), 1},
+		{"nothing listening", freeAddr(t), 1},
+		{"invalid address", "no-port", 1},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := healthcheck(tt.addr); got != tt.want {
+				t.Errorf("healthcheck(%q) = %d, want %d", tt.addr, got, tt.want)
+			}
+		})
+	}
+}

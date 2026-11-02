@@ -6,6 +6,7 @@
 //
 //	ollametry [flags]       run the proxy (see -help)
 //	ollametry healthcheck   probe /livez on the admin address; for container health checks
+//	ollametry version       print the version and exit (also -version, --version)
 package main
 
 import (
@@ -19,6 +20,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
+	"runtime/debug"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -35,9 +38,32 @@ import (
 // version is set at build time with -ldflags "-X main.version=...".
 var version = "dev"
 
+// currentVersion is the stamped version or, for `go install` builds that
+// were not stamped, the module version Go recorded in the binary.
+func currentVersion() string {
+	info, ok := debug.ReadBuildInfo()
+	return resolveVersion(version, info, ok)
+}
+
+func resolveVersion(stamped string, info *debug.BuildInfo, ok bool) string {
+	if stamped != "dev" || !ok || info == nil {
+		return stamped
+	}
+	if v := info.Main.Version; v != "" && v != "(devel)" {
+		return v
+	}
+	return stamped
+}
+
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
-		os.Exit(healthcheck(os.Getenv("OLLAMETRY_ADMIN_ADDR")))
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "healthcheck":
+			os.Exit(healthcheck(os.Getenv("OLLAMETRY_ADMIN_ADDR")))
+		case "version", "-version", "--version":
+			fmt.Printf("ollametry %s (%s, %s/%s)\n", currentVersion(), runtime.Version(), runtime.GOOS, runtime.GOARCH)
+			return
+		}
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -71,7 +97,7 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 		extraReaders, metricsHandler = append(extraReaders, reader), handler
 	}
 	mp, err := telemetry.NewMeterProvider(ctx, telemetry.ProviderConfig{
-		ServiceVersion:   version,
+		ServiceVersion:   currentVersion(),
 		CardinalityLimit: cfg.CardinalityLimit,
 		ExtraReaders:     extraReaders,
 	})
@@ -149,7 +175,7 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 	go func() { serveErr <- serve(adminSrv, adminLn, "admin") }()
 
 	logger.Info("ollametry started",
-		slog.String("version", version),
+		slog.String("version", currentVersion()),
 		slog.String("listen", cfg.ListenAddr),
 		slog.String("admin_listen", cfg.AdminAddr),
 		slog.String("ollama_url", cfg.OllamaURL.String()))
