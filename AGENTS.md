@@ -46,5 +46,5 @@ Dashboard changes: run every query against Prometheus (see CLAUDE.md), `make -C 
 ## Changes and commits
 
 - Every change adds a line to `CHANGELOG.md` under `## [Unreleased]` ([Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/)). Dependency and image bumps go under `Changed` as old → new; vulnerability fixes under `Security`.
-- Commit subjects are imperative, ≤ 72 characters; small focused commits; work on a branch, never commit to `main`.
+- Commit subjects are imperative, ≤ 72 characters; small focused commits; work on a branch, never commit to `main`. `main` is protected by a ruleset (no bypass): pull requests only, linear history, rebase merges only (`gh pr merge --rebase`), branch up to date, all required checks green. Update a branch with `git rebase origin/main` and `git push --force-with-lease`, never by merging `main` into it.
 - If a change alters metrics, ports, variables or make targets, update the matching `docs/` page (metrics, configuration, operations) and `CLAUDE.md` in the same change.
