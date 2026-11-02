@@ -12,6 +12,9 @@
 Metrics follow the OpenTelemetry
 [GenAI semantic conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/)
 where they exist; Ollama-specific ones are under `ollama.*`.
+They reach Prometheus either by OTLP push through otel-lgtm or by scraping
+`/metrics` ([Prometheus exporter](prometheus.md)); names and labels are the
+same both ways.
 
 ## What counts as inference
 

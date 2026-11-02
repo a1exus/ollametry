@@ -42,6 +42,7 @@ binds its ports to `127.0.0.1` only. Logs are JSON, rotated at 3 × 10 MB.
 | Proxy (use instead of Ollama) | `http://127.0.0.1:11435` |
 | Liveness | `http://127.0.0.1:11436/livez`: the process serves requests |
 | Readiness | `http://127.0.0.1:11436/readyz`: the last poll reached Ollama within three intervals |
+| Prometheus metrics | `http://127.0.0.1:11436/metrics` ([Prometheus exporter](prometheus.md)) |
 | Dashboard (folder "ollama") | `https://grafana.localhost/d/ollametry` |
 
 `make health` checks Ollama, the proxy and readiness in one go; `make smoke
