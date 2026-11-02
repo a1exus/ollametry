@@ -8,7 +8,7 @@ Flags take precedence over `OLLAMETRY_*` variables; Compose sets the
 variables. `ollametry -help` lists the flags; for the container `make up`
 started, `docker compose exec ollametry ollametry -help`.
 
-| Variable | Default (binary) | Compose default | Purpose |
+| Variable | Default (flag) | Compose default | Purpose |
 | --- | --- | --- | --- |
 | `OLLAMETRY_LISTEN_ADDR` | `127.0.0.1:11435` | `0.0.0.0:11435` (image) | Proxy listener |
 | `OLLAMETRY_ADMIN_ADDR` | `127.0.0.1:11436` | `0.0.0.0:11436` (image) | `/livez`, `/readyz`, `/metrics` |
@@ -22,16 +22,14 @@ started, `docker compose exec ollametry ollametry -help`.
 
 ## Setting variables
 
-Every `OLLAMETRY_*` variable has a flag (`ollametry -help`), and flags win.
-How to set the variables depends on how ollametry runs:
+Every `OLLAMETRY_*` variable also has a flag (`ollametry -help`), and flags
+win. In the container, set them as environment variables:
 
 | Runs as | Where |
 | --- | --- |
 | Docker Compose | the shell or a `.env` file next to `compose.yaml` (see [Compose](#compose)) |
-| macOS launchd | `EnvironmentVariables` in the plist |
-| Linux systemd | `Environment=` lines (`sudo systemctl edit ollametry`) |
-| Windows | user environment variables: `[Environment]::SetEnvironmentVariable("OLLAMETRY_LOG_LEVEL", "debug", "User")` |
-| A shell | `export OLLAMETRY_LOG_LEVEL=debug` (bash), `$env:OLLAMETRY_LOG_LEVEL = "debug"` (PowerShell) |
+| `docker run` | `-e OLLAMETRY_LOG_LEVEL=debug` |
+| Apple `container` | `-e OLLAMETRY_LOG_LEVEL=debug` on `container run` |
 
 ## OpenTelemetry exporter
 

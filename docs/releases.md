@@ -5,9 +5,9 @@
 ## Publishing
 
 Before tagging, run a dry run: *Actions → Release → Run workflow* on `main`, or
-`gh workflow run release.yml --ref main`. It builds the image and the archives
-and renders the release notes from `[Unreleased]` into the run summary, but
-publishes nothing; the archives and `notes.md` are attached to the run. A tag
+`gh workflow run release.yml --ref main`. It builds the image and renders the
+release notes from `[Unreleased]` into the run summary, but publishes
+nothing; `notes.md` is attached to the run. A tag
 then exercises the exact pipeline the dry run checked.
 
 1. Move the `## [Unreleased]` entries in [`CHANGELOG.md`](../CHANGELOG.md)
@@ -21,27 +21,22 @@ then exercises the exact pipeline the dry run checked.
 
 The release workflow then:
 
-- builds reproducible binary archives for macOS and Linux (`.tar.gz`) and
-  Windows (`.zip`), each for `arm64` and `amd64`, with `make dist`: the same
-  pinned Go image and flags as the container image. It attests them;
 - builds `ghcr.io/a1exus/ollametry` for `linux/amd64` and `linux/arm64`,
   tagged `X.Y.Z`, `X.Y`, `X` (from 1.0) and `latest`, with an SBOM and build
   provenance;
 - attests the image with GitHub artifact attestations;
-- creates the GitHub release from that version's `CHANGELOG.md` section,
-  attaching the archives and `SHA256SUMS`; it fails if the section is missing.
+- creates the GitHub release from that version's `CHANGELOG.md` section, with
+  the image digest and how to verify it; it fails if the section is missing.
+
+ollametry ships only as this image; there are no separate binaries.
 
 ## Verifying
 
 ```sh
 gh attestation verify oci://ghcr.io/a1exus/ollametry:X.Y.Z -R a1exus/ollametry
-gh attestation verify ollametry_X.Y.Z_darwin_arm64.tar.gz -R a1exus/ollametry
-gh attestation verify ollametry_X.Y.Z_windows_amd64.zip -R a1exus/ollametry
 ```
 
-To check reproducibility, run `make dist VERSION=vX.Y.Z` on the tagged commit
-and compare `dist/SHA256SUMS` with the release's. Installing is covered in
-[install](install.md).
+Running the image is covered in [install](install.md).
 
 ## Using a released image
 

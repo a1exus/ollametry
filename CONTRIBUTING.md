@@ -53,7 +53,6 @@ decoders handle. Both apply to human contributors too.
 
 Maintainers move the `Unreleased` entries under a new version heading in
 `CHANGELOG.md`, then push a tag `vX.Y.Z`. The release workflow publishes the
-multi-arch image to `ghcr.io/a1exus/ollametry` with SBOM and provenance,
-builds the binary archives for macOS, Linux and Windows, and creates the
-GitHub release from that changelog section with the archives attached. Run a
+multi-arch image to `ghcr.io/a1exus/ollametry` with SBOM and provenance and
+creates the GitHub release from that changelog section. Run a
 [dry run](docs/releases.md#publishing) first.
