@@ -4,9 +4,15 @@ name: Release
 # arm64 with SBOM and provenance attestations, builds reproducible binary
 # archives for macOS and Linux with provenance attestations, then creates a
 # GitHub release carrying the archives and SHA256SUMS.
+#
+# Running it manually (workflow_dispatch) is a dry run: it builds the image
+# and the archives and renders the release notes from [Unreleased], but logs
+# in, pushes, attests and releases nothing. The archives and notes are
+# uploaded as a workflow artifact to inspect before tagging.
 on:
   push:
     tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -15,9 +21,35 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  PUBLISH: ${{ github.event_name == 'push' }}
+
 jobs:
+  version:
+    name: Version
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      # The tag on a release; a version that can never be a release on a
+      # dry run, so nothing built by it is mistaken for one.
+      - id: version
+        env:
+          REF: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+        run: |
+          if [ "$PUBLISH" = true ]; then
+            version="$REF"
+          else
+            version="v0.0.0-dryrun.${SHA:0:12}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Version: $version (publish: $PUBLISH)"
+
   image:
-    name: Publish image
+    name: Image
+    needs: version
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -36,7 +68,8 @@ jobs:
       # target stage only copies the binary, so nothing runs emulated.
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+      - if: env.PUBLISH == 'true'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -56,22 +89,24 @@ jobs:
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: true
-          build-args: VERSION=${{ github.ref_name }}
+          push: ${{ env.PUBLISH == 'true' }}
+          build-args: VERSION=${{ needs.version.outputs.version }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           provenance: mode=max
           sbom: true
           cache-from: type=gha
 
-      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+      - if: env.PUBLISH == 'true'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-name: ghcr.io/${{ github.repository }}
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
 
   binaries:
-    name: Build binaries
+    name: Binaries
+    needs: version
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -87,10 +122,11 @@ jobs:
       # are reproducible (tools/dist.sh).
       - name: make dist
         env:
-          TAG: ${{ github.ref_name }}
-        run: make dist VERSION="$TAG"
+          VERSION: ${{ needs.version.outputs.version }}
+        run: make dist VERSION="$VERSION"
 
-      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+      - if: env.PUBLISH == 'true'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: dist/*.tar.gz
 
@@ -103,7 +139,7 @@ jobs:
 
   github-release:
     name: GitHub release
-    needs: [image, binaries]
+    needs: [version, image, binaries]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -118,23 +154,43 @@ jobs:
           name: dist
           path: dist
 
-      # Release notes are the tag's section of CHANGELOG.md (Keep a Changelog).
-      - name: Create release
+      # Release notes are the tag's section of CHANGELOG.md (Keep a Changelog);
+      # a dry run renders [Unreleased], which becomes the next version.
+      - name: Render release notes
         env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
+          VERSION: ${{ needs.version.outputs.version }}
           DIGEST: ${{ needs.image.outputs.digest }}
         run: |
-          version="${TAG#v}"
-          awk -v v="$version" '
+          version="${VERSION#v}"
+          section="$version"
+          [ "$PUBLISH" = true ] || section=Unreleased
+          awk -v v="$section" '
             index($0, "## [" v "]") == 1 { found = 1; next }
             found && (/^## \[/ || /^\[[^]]+\]: /) { exit }
             found { print }
           ' CHANGELOG.md > notes.md
           if [ ! -s notes.md ]; then
-            echo "::error file=CHANGELOG.md::no section for [$version]; move Unreleased entries under it before tagging"
+            echo "::error file=CHANGELOG.md::no section for [$section]; move Unreleased entries under it before tagging"
             exit 1
           fi
           printf '\n## Image\n\n    ghcr.io/%s:%s\n    %s\n' "$GITHUB_REPOSITORY" "$version" "$DIGEST" >> notes.md
           printf '\n## Binaries\n\nmacOS and Linux archives are attached. Verify a download before use:\n\n    sha256sum --check --ignore-missing SHA256SUMS\n    gh attestation verify ollametry_%s_<os>_<arch>.tar.gz -R %s\n' "$version" "$GITHUB_REPOSITORY" >> notes.md
-          gh release create "$TAG" --title "$TAG" --notes-file notes.md --verify-tag dist/*.tar.gz dist/SHA256SUMS
+          {
+            echo "### Release notes ($section)"
+            cat notes.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create release
+        if: env.PUBLISH == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.version.outputs.version }}
+        run: gh release create "$TAG" --title "$TAG" --notes-file notes.md --verify-tag dist/*.tar.gz dist/SHA256SUMS
+
+      - name: Upload dry-run notes
+        if: env.PUBLISH != 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-notes
+          path: notes.md
+          retention-days: 7
