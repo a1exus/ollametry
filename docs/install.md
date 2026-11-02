@@ -17,7 +17,7 @@ Windows without an NVIDIA GPU (see [GPU access](containers.md#where-ollama-shoul
 Pick the way that matches your machine:
 
 | OS | Native binary as a service | Container |
-|---|---|---|
+| --- | --- | --- |
 | macOS (Apple silicon, Intel) | [launchd agent](#macos-service-launchd) | [Docker Desktop or Apple `container`](containers.md) |
 | Linux (`amd64`, `arm64`) | [systemd unit](#linux-service-systemd) | [Docker Engine](containers.md#linux-docker-engine) |
 | Windows (`amd64`, `arm64`) | [Task Scheduler](#windows-task-scheduler) | [WSL 2](containers.md#windows-wsl-2) |
@@ -36,7 +36,7 @@ Each [release](https://github.com/a1exus/ollametry/releases) carries one
 archive per platform and a `SHA256SUMS` file:
 
 | OS | Archive | Contains |
-|---|---|---|
+| --- | --- | --- |
 | macOS | `ollametry_<version>_darwin_<arm64\|amd64>.tar.gz` | `ollametry`, the [launchd agent](#macos-service-launchd) |
 | Linux | `ollametry_<version>_linux_<amd64\|arm64>.tar.gz` | `ollametry`, the [systemd unit](#linux-service-systemd) |
 | Windows | `ollametry_<version>_windows_<amd64\|arm64>.zip` | `ollametry.exe` |
@@ -103,7 +103,7 @@ curl -s http://127.0.0.1:11436/readyz                 # ok once Ollama answers
 ```
 
 | Task | Command |
-|---|---|
+| --- | --- |
 | Status | `launchctl print "gui/$(id -u)/io.github.a1exus.ollametry"` |
 | Logs | `tail -f /tmp/ollametry.log` |
 | Restart | `launchctl kickstart -k "gui/$(id -u)/io.github.a1exus.ollametry"` |
@@ -128,7 +128,7 @@ curl -s http://127.0.0.1:11436/readyz                 # ok once Ollama answers
 ```
 
 | Task | Command |
-|---|---|
+| --- | --- |
 | Status | `systemctl status ollametry` |
 | Logs | `journalctl -u ollametry -f` |
 | Change settings | `sudo systemctl edit ollametry` (add `Environment=` lines), then restart |
@@ -162,7 +162,7 @@ Invoke-WebRequest http://127.0.0.1:11436/readyz      # ok once Ollama answers
 stops tasks after three days.
 
 | Task | Command |
-|---|---|
+| --- | --- |
 | Status | `Get-ScheduledTask -TaskName ollametry \| Get-ScheduledTaskInfo` |
 | Logs | `Get-Content "$env:LOCALAPPDATA\Programs\ollametry\ollametry.log" -Wait` |
 | Restart | `Stop-ScheduledTask ollametry; Start-ScheduledTask ollametry` |

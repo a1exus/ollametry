@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+<!-- markdownlint-disable MD013 -- one fact per line, unwrapped, for agents and diffs -->
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. Operating rules are in [`AGENTS.md`](AGENTS.md); user-facing docs are [`README.md`](README.md) and [`docs/`](docs/).
 
 ## Project overview
@@ -9,7 +11,7 @@ ollametry is a Go reverse proxy in front of a host-installed Ollama (here the ma
 ## Layout
 
 | Path | Role |
-|---|---|
+| --- | --- |
 | `cmd/ollametry` | Wiring, graceful shutdown, `healthcheck` subcommand (distroless has no curl), `version` subcommand (falls back to the module version from build info for `go install`) |
 | `internal/config` | Flags with `OLLAMETRY_*` env defaults; all errors reported at once |
 | `internal/route` | Path → `http.route` template, GenAI operation, response dialect. Unknown paths get no route (cardinality) |
@@ -26,7 +28,7 @@ ollametry is a Go reverse proxy in front of a host-installed Ollama (here the ma
 | `deploy/launchd` | macOS launchd agent for the native binary; shipped in darwin archives |
 | `deploy/systemd` | Hardened systemd unit for the Linux binary (`systemd-analyze security` 1.2); shipped in linux archives |
 | `tools/dist.sh` | `make dist`: reproducible release archives (sorted tar, fixed mtime from the last commit, `gzip -n`) built in the pinned golang image . Windows gets `.zip` archives with `ollametry.exe`, written by `tools/mkzip` (archive/zip through `os.Root`; the golang image has no zip) |
-| `docs/` | User docs: install, containers, clients, metrics, prometheus, configuration, operations, development, releases. README is an overview with links |
+| `docs/` | User docs: install, containers, clients, metrics, prometheus, configuration, operations, development, releases. README is an overview with links . Markdown style (`.markdownlint-cli2.yaml`: prose wrapped at 80, compact tables, fenced code with a language) and local links are checked by `make docs-check` |
 | `test/e2e` | E2E tests (`//go:build e2e`) and their throwaway stack `compose.yaml`. Integration tests are `*_integration_test.go` with `//go:build integration`; golangci-lint builds both tags |
 | `THIRD_PARTY_NOTICES.md`, `tools/notices.awk` | Third-party attribution. The Go module table between the `go-licenses` markers is generated (`make notices`, checked in CI by `notices-check`); the other sections are hand-written |
 
@@ -65,8 +67,8 @@ Verified against Ollama 0.40.13 and `grafana/otel-lgtm:0.39.0` (Prometheus 3.15.
 ## CI and releases
 
 | Workflow | Runs on | Does |
-|---|---|---|
-| `ci.yml` | PRs, pushes to `main` | Matrix legs, each one `make` target: `ci-lint` (tidy-check, versions-check, lint, vuln, lint-ci, openapi-check, dashboard-check, rules-check, notices-check), `test-unit`, `cover` (unit + integration). E2E is local only (`make e2e`, `make e2e-hermetic`): it needs a real Ollama and multi-GB images, and the integration tests already cover the assembled binary and OTLP on every PR. Caches are bind-mounted dirs (`CACHE_GOMOD`, `CACHE_GOBUILD`, `CACHE_GOLANGCI`) kept by `actions/cache`, saved only on pushes to `main`. Job `native`: `go test -tags integration` on macos-15 (with `-race`) and windows-2025 (no cgo, no `-race`) via setup-go, since those runners have no Docker. Multi-arch image build without QEMU and a smoke test without Ollama; dependency review on PRs |
+| --- | --- | --- |
+| `ci.yml` | PRs, pushes to `main` | Matrix legs, each one `make` target: `ci-lint` (tidy-check, versions-check, lint, vuln, lint-ci, openapi-check, docs-check, dashboard-check, rules-check, notices-check), `test-unit`, `cover` (unit + integration). E2E is local only (`make e2e`, `make e2e-hermetic`): it needs a real Ollama and multi-GB images, and the integration tests already cover the assembled binary and OTLP on every PR. Caches are bind-mounted dirs (`CACHE_GOMOD`, `CACHE_GOBUILD`, `CACHE_GOLANGCI`) kept by `actions/cache`, saved only on pushes to `main`. Job `native`: `go test -tags integration` on macos-15 (with `-race`) and windows-2025 (no cgo, no `-race`) via setup-go, since those runners have no Docker. Multi-arch image build without QEMU and a smoke test without Ollama; dependency review on PRs |
 | `fuzz.yml` | nightly, manual | `make fuzz` per target in parallel, 10 min each; failing inputs uploaded. Not a PR gate: PRs replay the corpus via `make test` |
 | `codeql.yml` | PRs, `main`, weekly | CodeQL `security-and-quality` for Go (`GOTOOLCHAIN=auto` for the go.mod version) |
 | `scorecard.yml` | `main`, weekly | OpenSSF Scorecard, published for the README badge |
@@ -79,7 +81,7 @@ Every action is pinned to a commit SHA with the version in a comment, chosen at 
 ## Common commands
 
 ```sh
-make check              # lint, lint-ci, openapi/dashboard/rules checks, unit + integration tests, vuln (CI runs these plus tidy, versions and notices checks)
+make check              # lint, lint-ci, openapi/docs/dashboard/rules checks, unit + integration tests, vuln (CI runs these plus tidy, versions and notices checks)
 make up && make health  # build, run, verify against the real Ollama
 make smoke MODEL=granite4.2:8b
 make e2e                # E2E against the running stack (after make up)

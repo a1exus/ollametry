@@ -21,6 +21,8 @@ ZIZMOR_VERSION   ?= 1.30.1
 JQ_VERSION       ?= 1.8.1
 PROMETHEUS_VERSION ?= v3.15.1
 SPECTRAL_VERSION ?= 6.17.0
+MARKDOWNLINT_VERSION ?= v0.23.3
+LYCHEE_VERSION ?= 0.24.2
 GOLICENSES_VERSION ?= v2.0.1
 BENCHSTAT_VERSION  ?= v0.0.0-20251208221838-04cf7a2dca90
 BENCH_COUNT        ?= 6
@@ -143,6 +145,12 @@ openapi-check: ## Lint api/openapi.yaml with Spectral (the contract test checks 
 	docker run --rm --platform linux/amd64 -v "$(CURDIR)/api":/api:ro -w /api stoplight/spectral:$(SPECTRAL_VERSION) \
 		lint --ruleset .spectral.yaml --fail-severity hint openapi.yaml
 
+.PHONY: docs-check
+docs-check: ## Lint Markdown (markdownlint-cli2) and check local links and anchors (lychee, offline)
+	docker run --rm -v "$(CURDIR)":/workdir davidanson/markdownlint-cli2:$(MARKDOWNLINT_VERSION)
+	docker run --rm -v "$(CURDIR)":/input:ro -w /input lycheeverse/lychee:$(LYCHEE_VERSION) \
+		--offline --include-fragments --no-progress --exclude-path .cache --exclude-path dist './**/*.md'
+
 .PHONY: dashboard-check
 dashboard-check: ## Validate the Grafana dashboard JSON
 	@for f in deploy/grafana/*.json; do \
@@ -184,10 +192,10 @@ versions-check: ## Fail if go.mod, the Makefile and the Dockerfile name differen
 	fi; echo "Go $(GO_VERSION) everywhere"
 
 .PHONY: ci-lint
-ci-lint: tidy-check versions-check lint vuln lint-ci openapi-check dashboard-check rules-check notices-check ## CI lint leg: tidy, versions, lint, vuln, workflows, OpenAPI, dashboard, rules, notices
+ci-lint: tidy-check versions-check lint vuln lint-ci openapi-check docs-check dashboard-check rules-check notices-check ## CI lint leg: tidy, versions, lint, vuln, workflows, OpenAPI, docs, dashboard, rules, notices
 
 .PHONY: check
-check: lint lint-ci openapi-check dashboard-check rules-check test vuln ## Lint code, workflows and dashboard, test and scan (run before every commit)
+check: lint lint-ci openapi-check docs-check dashboard-check rules-check test vuln ## Lint code, workflows, docs and dashboard, test and scan (run before every commit)
 
 ##@ Lifecycle (docker compose)
 

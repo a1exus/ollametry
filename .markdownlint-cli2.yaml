@@ -1,0 +1,18 @@
+# markdownlint-cli2 (make docs-check). Rules follow the repository's style:
+# prose wrapped at 80 columns, compact tables, fenced code with a language.
+config:
+  default: true
+  MD013:
+    line_length: 80
+    tables: false
+    code_blocks: false
+    headings: false
+  MD060:
+    style: compact
+globs:
+  - "**/*.md"
+ignores:
+  - ".cache/**"
+  - "dist/**"
+  # The Contributor Covenant, kept verbatim.
+  - "CODE_OF_CONDUCT.md"

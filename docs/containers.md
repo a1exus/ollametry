@@ -12,7 +12,7 @@
 - [NVIDIA GPUs on Linux and WSL 2](#nvidia-gpus-on-linux-and-wsl-2)
 
 | OS | Runtime | Compose and `make up` | Status |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Linux | [Docker Engine](https://docs.docker.com/engine/install/) | Yes, with one override | Image build and smoke test run on Docker Engine in CI |
 | macOS | Docker Desktop | Yes, as is | Verified: the project is developed and E2E-tested here |
 | macOS | [Apple `container`](https://github.com/apple/container) | No Compose; `container run` | Not tested by this project |
@@ -29,7 +29,7 @@ GPU when the runtime passes it through, and that depends on the OS and the
 GPU vendor:
 
 | Host | GPU | Ollama in a container | Run Ollama |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | macOS (Apple silicon) | Apple GPU (Metal) | **CPU only.** "GPU acceleration is not available for Docker Desktop in macOS due to the lack of GPU passthrough and emulation" ([Ollama FAQ](https://docs.ollama.com/faq#how-do-i-use-ollama-with-gpu-acceleration-in-docker)). Apple `container` documents no GPU access for Linux containers either | **On the host**: the Ollama app or Homebrew. This is the setup ollametry is built around |
 | Windows | NVIDIA | GPU through Docker Desktop's WSL 2 backend (GPU paravirtualization, `--gpus=all`) or the NVIDIA Container Toolkit in WSL | On the host, or in a container with [NVIDIA GPUs](#nvidia-gpus-on-linux-and-wsl-2) |
 | Windows | AMD, Intel | **CPU only**: Docker Desktop passes through NVIDIA GPUs only ([Docker GPU support](https://docs.docker.com/desktop/features/gpu/)) | **On the host** |
@@ -49,7 +49,7 @@ ollametry in a container has to reach Ollama on the host. Ollama listens on
 container, not the host. Each runtime bridges that differently:
 
 | Ollama listens on | Host header Ollama accepts |
-|---|---|
+| --- | --- |
 | Loopback (default) | `localhost`, any `*.localhost`, `*.local` or `*.internal` name, loopback or private IPs, the machine's own addresses |
 | Any other address (`OLLAMA_HOST=0.0.0.0`) | Anything |
 
@@ -106,8 +106,8 @@ Ollama app listens. See [operations](operations.md#running-with-docker-compose).
 Apple's [`container`](https://github.com/apple/container) runs Linux
 containers in lightweight VMs on Apple silicon. Install it with Homebrew
 (`brew install container`). Run only ollametry in it: Ollama belongs on the
-host, [with the GPU](#where-ollama-should-run-gpu-access). It has no Compose and no
-`host.docker.internal`, so run ollametry with `container run`. This project
+host, [with the GPU](#where-ollama-should-run-gpu-access). It has no Compose
+and no `host.docker.internal`, so run ollametry with `container run`. This project
 does not test it; the commands follow Apple's
 [host integration](https://github.com/apple/container/blob/main/docs/host-integration.md)
 and [networking](https://github.com/apple/container/blob/main/docs/networking.md)
@@ -164,7 +164,7 @@ Containers on Windows run inside WSL 2. Follow Microsoft's
 then pick the case that matches where Ollama runs:
 
 | Ollama runs in | Docker runs as | Setup |
-|---|---|---|
+| --- | --- | --- |
 | Windows (the Ollama app) | Docker Desktop with the WSL 2 backend | `make up` from a WSL shell; Docker Desktop provides `host.docker.internal`. If ollametry reports Ollama unreachable, set the Windows environment variable `OLLAMA_HOST=0.0.0.0:11434`, restart Ollama, and restrict port 11434 in Windows Firewall |
 | Windows | Docker Engine inside a WSL distribution | Set `OLLAMA_HOST=0.0.0.0:11434` on Windows, and point ollametry at the Windows host from WSL: with the default NAT networking that is the WSL default gateway (`ip route show default`); set `OLLAMA_UPSTREAM=http://<gateway>:11434` |
 | The WSL distribution (Linux install) | Docker Engine in the same distribution | As [Linux](#linux-docker-engine) |

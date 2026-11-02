@@ -14,7 +14,7 @@ to otel-lgtm, it serves every metric it records in the Prometheus text format,
 so any Prometheus, Grafana Agent/Alloy, VictoriaMetrics or other scraper can
 collect Ollama metrics directly.
 
-```
+```text
  Prometheus ──scrape──► ollametry :11436/metrics
                         ollametry ──OTLP push──► otel-lgtm :4318   (optional)
 ```
@@ -22,7 +22,7 @@ collect Ollama metrics directly.
 ## The /metrics endpoint
 
 | | |
-|---|---|
+| --- | --- |
 | URL | `http://127.0.0.1:11436/metrics` (the admin listener, next to `/livez` and `/readyz`) |
 | Format | Prometheus text exposition |
 | Content | Every metric in the [metric reference](metrics.md#metric-reference), Go runtime metrics, and `target_info` with the resource (`service_name`, `service_version`, ...) |
@@ -81,7 +81,7 @@ the queries in [metrics](metrics.md#querying-in-prometheus) work against
 either source.
 
 | | OTLP via otel-lgtm | Scraped `/metrics` |
-|---|---|---|
+| --- | --- | --- |
 | Metric names and labels | `gen_ai_*`, `ollama_*`, `http_server_*` | identical |
 | Resource | `job` = `service_name`, plus promoted resource labels | `target_info` series; `job` and `instance` from the scrape config |
 | Timing | Pushed every `OTEL_METRIC_EXPORT_INTERVAL` | Read at every scrape |
@@ -98,7 +98,7 @@ rule_files:
 ```
 
 | Alert | Fires when | Severity |
-|---|---|---|
+| --- | --- | --- |
 | `OllamaDown` | ollametry has not reached Ollama for 2 minutes | critical |
 | `OllametryAbsent` | No `ollama_up` series for 10 minutes: ollametry, its exports or its scrapes are down | warning |
 | `OllamaHighErrorRate` | Over 5 % of a model's requests fail server-side for 10 minutes (4xx and client cancellations excluded) | warning |

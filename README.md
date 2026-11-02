@@ -22,7 +22,7 @@ Ollama has no metrics endpoint, so ollametry sits in front of it and reads the
 usage statistics Ollama already returns in every response. Requests and
 responses pass through byte for byte, streaming included.
 
-```
+```text
  clients ──► ollametry :11435 ──► Ollama :11434 (on the host: macOS, Linux or Windows)
                  │
                  ├─ per request: gen_ai.* and http.server.* metrics
@@ -47,7 +47,7 @@ ollametry is one static binary with no dependencies. Run it natively next to
 Ollama, or in a container.
 
 | OS | Binary | Run as | Container | Tested in CI |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | macOS | `arm64`, `amd64` | [launchd agent](docs/install.md#macos-service-launchd) | [Docker Desktop, Apple `container`](docs/containers.md) | Unit and integration tests on macOS |
 | Linux | `amd64`, `arm64` | [systemd unit](docs/install.md#linux-service-systemd) | [Docker Engine](docs/containers.md#linux-docker-engine), with NVIDIA GPUs | All checks, image build and smoke test |
 | Windows | `amd64`, `arm64` (`ollametry.exe`) | [Task Scheduler](docs/install.md#windows-task-scheduler) | [WSL 2](docs/containers.md#windows-wsl-2) | Unit and integration tests on Windows |
@@ -99,7 +99,7 @@ setup the dashboard is at `https://grafana.localhost/d/ollametry` (folder
 ## Documentation
 
 | Guide | Covers |
-|---|---|
+| --- | --- |
 | [Install](docs/install.md) | Binaries for macOS, Linux and Windows; running as a launchd, systemd or Task Scheduler service; the container image; `go install` |
 | [Container environments](docs/containers.md) | Linux Docker Engine, macOS Docker Desktop or Apple `container`, Windows WSL 2; GPU access and where Ollama should run; NVIDIA GPUs |
 | [Clients](docs/clients.md) | Pointing the Ollama CLI and OpenAI/Anthropic SDKs at the proxy; measuring every client |
@@ -117,7 +117,7 @@ Also: [`CLAUDE.md`](CLAUDE.md) (architecture and verified API quirks),
 ## Supported APIs
 
 | API | Endpoints | Streaming |
-|---|---|---|
+| --- | --- | --- |
 | Ollama native | `/api/generate`, `/api/chat`, `/api/embed`, `/api/embeddings` | NDJSON |
 | OpenAI-compatible | `/v1/chat/completions`, `/v1/completions`, `/v1/embeddings` | SSE |
 | Anthropic Messages | `/v1/messages` | SSE |
