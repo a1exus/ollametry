@@ -71,6 +71,8 @@ Verified against Ollama 0.40.13 and `grafana/otel-lgtm:0.39.0` (Prometheus 3.15.
 | `scorecard.yml` | `main`, weekly | OpenSSF Scorecard, published for the README badge |
 | `release.yml` | tags `vX.Y.Z` | GHCR image (amd64, arm64) with SBOM and provenance, attestation; binary archives for darwin and linux (`make dist`) with attestation; GitHub release from the CHANGELOG section with the archives and `SHA256SUMS` (fails if the section is missing). `workflow_dispatch` is a dry run (`PUBLISH=false`): builds the image and archives and renders notes from `[Unreleased]`, with no login, push, attestation or release; version `v0.0.0-dryrun.<sha>` |
 
+The `main` ruleset (no bypass actors) requires pull requests, linear history and rebase merges only; required checks, all from GitHub Actions (app 15368), with the branch up to date: Lint and scan, Unit tests, Integration tests, Tests (macos-15), Tests (windows-2025), Build and smoke-test image, Analyze Go, Dependency review. Renaming a job or changing a runner label means updating the ruleset too.
+
 Every action is pinned to a commit SHA with the version in a comment, chosen at least 14 days after release; Dependabot keeps them current with the same 14-day cooldown. Dependabot also watches Go modules, the Dockerfile and `test/e2e/compose.yaml`; it cannot read the Makefile's tool versions (`*_VERSION`), which are updated by hand. The Go version appears in `go.mod`, the Makefile and the Dockerfile; `make versions-check` keeps them equal. Workflows have `contents: read` (or none) at the top and grant more per job, each with a comment; `make lint-ci` (actionlint, zizmor) enforces this locally and in CI.
 
 ## Common commands
