@@ -3,5 +3,7 @@
 !go.sum
 !cmd/
 !internal/
+!LICENSE
+!THIRD_PARTY_NOTICES.md
 internal/**/testdata/
 **/*_test.go

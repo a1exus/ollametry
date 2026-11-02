@@ -19,6 +19,7 @@ GOVULN_VERSION   ?= v1.9.0
 ACTIONLINT_VERSION ?= 1.7.12
 ZIZMOR_VERSION   ?= 1.30.1
 JQ_VERSION       ?= 1.8.1
+GOLICENSES_VERSION ?= v2.0.1
 VERSION          ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
 # Toolchains run in containers. Caches are named volumes; CI sets them to
@@ -128,8 +129,21 @@ lint-ci: ## Lint GitHub Actions workflows (actionlint, zizmor)
 	docker run --rm -v "$(CURDIR)":/repo -w /repo rhysd/actionlint:$(ACTIONLINT_VERSION) -color
 	docker run --rm -v "$(CURDIR)":/repo:ro -w /repo ghcr.io/zizmorcore/zizmor:$(ZIZMOR_VERSION) --offline .
 
+.PHONY: notices
+notices: ## Regenerate the Go module table in THIRD_PARTY_NOTICES.md (go-licenses)
+	$(DOCKER_RUN) -e GOOS=linux golang:$(GO_VERSION) \
+		go run github.com/google/go-licenses/v2@$(GOLICENSES_VERSION) report ./cmd/ollametry \
+	| awk -F, -f tools/notices.awk > .notices.tmp
+	awk '/<!-- BEGIN go-licenses -->/ { print; while ((getline line < ".notices.tmp") > 0) print line; skip = 1; next } \
+		/<!-- END go-licenses -->/ { skip = 0 } !skip' THIRD_PARTY_NOTICES.md > .notices.md && mv .notices.md THIRD_PARTY_NOTICES.md
+	@rm -f .notices.tmp
+
+.PHONY: notices-check
+notices-check: notices ## Fail if THIRD_PARTY_NOTICES.md misses a dependency
+	@git diff --exit-code -- THIRD_PARTY_NOTICES.md || { echo 'notices-check: run make notices and commit the result' >&2; exit 1; }
+
 .PHONY: ci-lint
-ci-lint: tidy-check lint vuln lint-ci dashboard-check ## CI lint leg: tidy, lint, vuln, workflows, dashboard
+ci-lint: tidy-check lint vuln lint-ci dashboard-check notices-check ## CI lint leg: tidy, lint, vuln, workflows, dashboard, notices
 
 .PHONY: check
 check: lint lint-ci dashboard-check test vuln ## Lint code, workflows and dashboard, test and scan (run before every commit)

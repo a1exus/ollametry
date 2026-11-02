@@ -30,6 +30,8 @@ LABEL org.opencontainers.image.title="ollametry" \
 # --link: the layer does not depend on the base image, so a base image update
 # reuses it instead of rebuilding.
 COPY --link --from=build /out/ollametry /usr/local/bin/ollametry
+# MIT, BSD and Apache-2.0 require their notices to travel with the binary.
+COPY --link LICENSE THIRD_PARTY_NOTICES.md /usr/share/doc/ollametry/
 ENV OLLAMETRY_LISTEN_ADDR=0.0.0.0:11435 \
     OLLAMETRY_ADMIN_ADDR=0.0.0.0:11436
 EXPOSE 11435 11436
