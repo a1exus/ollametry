@@ -8,6 +8,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-02
+
 The first release.
 
 ### Added
@@ -94,3 +96,6 @@ The first release.
 - `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`,
   `THIRD_PARTY_NOTICES.md`, and `.bestpractices.json` for the OpenSSF Best
   Practices badge.
+
+[Unreleased]: https://github.com/a1exus/ollametry/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/a1exus/ollametry/releases/tag/v0.1.0
