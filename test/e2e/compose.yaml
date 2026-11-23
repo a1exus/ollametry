@@ -7,7 +7,7 @@ name: ollametry-e2e
 
 services:
   ollama:
-    image: ollama/ollama:0.40.13@sha256:b2f0122c476bc9fe7ce679d8bb4bd555351e25e2554eefb156f61cb0a89cf429
+    image: ollama/ollama:0.40.15@sha256:0e59999e0e8f9fd4e704bd788a89b7e4cad399367fb1365f8c102ac662288761
     environment:
       OLLAMA_KEEP_ALIVE: 10m
     volumes:
@@ -19,7 +19,7 @@ services:
       retries: 30
 
   otel-lgtm:
-    image: grafana/otel-lgtm:0.39.0@sha256:4c8056c9c05fcb3c8fd93800e85334bfd79b4d0271b47a54a121a64af41fe1fe
+    image: grafana/otel-lgtm:0.40.0@sha256:72e05804790e6e0d8c0b70a6d5ff1f721ef7b203463374631e99aa3429bd0cf6
     healthcheck:
       test: ["CMD-SHELL", "test -f /tmp/ready && curl -fsS -o /dev/null http://localhost:9090/-/ready"]
       interval: 2s
